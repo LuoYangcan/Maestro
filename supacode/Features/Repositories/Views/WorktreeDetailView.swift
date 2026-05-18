@@ -89,31 +89,12 @@ struct WorktreeDetailView: View {
           )
         )
       {
-        WorktreeToolbarContent(
+        worktreeToolbarContent(
           toolbarState: toolbarState,
-          onRenameBranch: { newBranch in
-            guard let selectedWorktree else { return }
-            store.send(.repositories(.requestRenameBranch(selectedWorktree.id, newBranch)))
-          },
-          onOpenWorktree: { action in
-            store.send(.openWorktree(action))
-          },
-          onOpenActionSelectionChanged: { action in
-            store.send(.openActionSelectionChanged(action))
-          },
-          onCopyPath: {
-            guard let selectedTerminalWorktree else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(selectedTerminalWorktree.workingDirectory.path, forType: .string)
-          },
-          onSelectNotification: selectToolbarNotification,
-          onDismissAllNotifications: { dismissAllToolbarNotifications(in: notificationGroups) },
-          onRunScript: { store.send(.runScript) },
-          onStopRunScript: { store.send(.stopRunScript) },
-          onRunCustomCommand: { index in
-            store.send(.runCustomCommand(index))
-          },
-          onCheckForUpdates: { store.send(.updates(.checkForUpdates)) }
+          repositories: repositories,
+          selectedWorktree: selectedWorktree,
+          selectedTerminalWorktree: selectedTerminalWorktree,
+          notificationGroups: notificationGroups
         )
       }
     }
@@ -124,6 +105,49 @@ struct WorktreeDetailView: View {
       runScriptIsRunning: runScriptIsRunning
     )
     return applyFocusedActions(content: content, actions: actions)
+  }
+
+  @ToolbarContentBuilder
+  private func worktreeToolbarContent(
+    toolbarState: WorktreeToolbarState,
+    repositories: RepositoriesFeature.State,
+    selectedWorktree: Worktree?,
+    selectedTerminalWorktree: Worktree?,
+    notificationGroups: [ToolbarNotificationRepositoryGroup]
+  ) -> some ToolbarContent {
+    WorktreeToolbarContent(
+      toolbarState: toolbarState,
+      onRenameBranch: { newBranch in
+        guard let selectedWorktree else { return }
+        store.send(.repositories(.requestRenameBranch(selectedWorktree.id, newBranch)))
+      },
+      externalRenamePrompt: repositories.pendingRenameBranchRequest
+        .flatMap { request in
+          request.worktreeID == selectedWorktree?.id ? request : nil
+        },
+      onConsumeExternalRenamePrompt: { requestID in
+        store.send(.repositories(.consumePendingRenameBranchRequest(requestID)))
+      },
+      onOpenWorktree: { action in
+        store.send(.openWorktree(action))
+      },
+      onOpenActionSelectionChanged: { action in
+        store.send(.openActionSelectionChanged(action))
+      },
+      onCopyPath: {
+        guard let selectedTerminalWorktree else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(selectedTerminalWorktree.workingDirectory.path, forType: .string)
+      },
+      onSelectNotification: selectToolbarNotification,
+      onDismissAllNotifications: { dismissAllToolbarNotifications(in: notificationGroups) },
+      onRunScript: { store.send(.runScript) },
+      onStopRunScript: { store.send(.stopRunScript) },
+      onRunCustomCommand: { index in
+        store.send(.runCustomCommand(index))
+      },
+      onCheckForUpdates: { store.send(.updates(.checkForUpdates)) }
+    )
   }
 
   @ToolbarContentBuilder
@@ -477,6 +501,8 @@ struct WorktreeDetailView: View {
   fileprivate struct WorktreeToolbarContent: ToolbarContent {
     let toolbarState: WorktreeToolbarState
     let onRenameBranch: (String) -> Void
+    let externalRenamePrompt: PendingRenameBranchRequest?
+    let onConsumeExternalRenamePrompt: (Int) -> Void
     let onOpenWorktree: (OpenWorktreeAction) -> Void
     let onOpenActionSelectionChanged: (OpenWorktreeAction) -> Void
     let onCopyPath: () -> Void
@@ -492,7 +518,9 @@ struct WorktreeDetailView: View {
       ToolbarItem {
         WorktreeDetailTitleView(
           title: toolbarState.title,
-          onSubmit: toolbarState.title.supportsRename ? onRenameBranch : nil
+          onSubmit: toolbarState.title.supportsRename ? onRenameBranch : nil,
+          externalRenamePrompt: externalRenamePrompt,
+          onConsumeExternalRenamePrompt: onConsumeExternalRenamePrompt
         )
       }
 
@@ -975,6 +1003,8 @@ private struct WorktreeToolbarPreview: View {
       WorktreeDetailView.WorktreeToolbarContent(
         toolbarState: toolbarState,
         onRenameBranch: { _ in },
+        externalRenamePrompt: nil,
+        onConsumeExternalRenamePrompt: { _ in },
         onOpenWorktree: { _ in },
         onOpenActionSelectionChanged: { _ in },
         onCopyPath: {},

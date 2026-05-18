@@ -537,6 +537,45 @@ struct AppFeatureCommandPaletteTests {
     await store.receive(\.repositories.worktreeOrdering.unpinWorktree)
   }
 
+  @Test(.dependencies) func renameBranchDelegateDispatchesRequestPrompt() async {
+    let worktree = makeWorktree(
+      id: "/tmp/repo-rename/wt-1",
+      name: "wt-1",
+      repoRoot: "/tmp/repo-rename"
+    )
+    let repository = makeRepository(id: "/tmp/repo-rename", worktrees: [worktree])
+    var repositoriesState = RepositoriesFeature.State()
+    repositoriesState.repositories = [repository]
+    repositoriesState.selection = .worktree(worktree.id)
+    let store = TestStore(
+      initialState: AppFeature.State(
+        repositories: repositoriesState,
+        settings: SettingsFeature.State()
+      )
+    ) {
+      AppFeature()
+    }
+    store.exhaustivity = .off
+
+    await store.send(.commandPalette(.delegate(.renameBranch)))
+    await store.receive(\.repositories.requestRenameBranchPrompt) {
+      $0.repositories.nextPendingRenameBranchRequestID = 1
+      $0.repositories.pendingRenameBranchRequest = PendingRenameBranchRequest(
+        id: 1,
+        worktreeID: worktree.id
+      )
+    }
+  }
+
+  @Test(.dependencies) func renameBranchDelegateNoopsWithoutSelectedWorktree() async {
+    let store = TestStore(initialState: AppFeature.State()) {
+      AppFeature()
+    }
+
+    await store.send(.commandPalette(.delegate(.renameBranch)))
+    await store.finish()
+  }
+
   @Test(.dependencies) func runCustomCommandDelegateDispatchesAppAction() async {
     let store = TestStore(initialState: AppFeature.State()) {
       AppFeature()

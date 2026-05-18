@@ -75,6 +75,7 @@ struct CommandPaletteItem: Identifiable, Equatable {
     case stopRunScript
     case togglePinWorktree(Worktree.ID, isCurrentlyPinned: Bool)
     case deleteWorktree(Worktree.ID, Repository.ID)
+    case renameBranch
     case runCustomCommand(index: Int, commandID: String, systemImage: String)
     #if DEBUG
       case debugTestToast(RepositoriesFeature.StatusToast)
@@ -129,6 +130,8 @@ struct CommandPaletteItem: Identifiable, Equatable {
       return AppShortcuts.CommandID.runScript
     case .stopRunScript:
       return AppShortcuts.CommandID.stopScript
+    case .renameBranch:
+      return AppShortcuts.CommandID.renameBranch
     case .ghosttyCommand,
       .markPullRequestReady,
       .mergePullRequest,

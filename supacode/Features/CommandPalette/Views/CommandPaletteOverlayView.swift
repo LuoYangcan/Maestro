@@ -541,7 +541,7 @@ private struct CommandPaletteRowView: View {
       .rerunFailedJobs, .openFailingCheckDetails, .worktreeSelect, .changeFocusedTabIcon,
       .toggleLeftSidebar, .toggleActiveAgentsPanel, .toggleCanvas, .toggleShelf, .showDiff,
       .revealInFinder, .copyPath, .revealInSidebar,
-      .runScript, .stopRunScript, .togglePinWorktree, .runCustomCommand:
+      .runScript, .stopRunScript, .togglePinWorktree, .renameBranch, .runCustomCommand:
       return nil
     case .removeWorktree:
       return "Remove"
@@ -622,6 +622,8 @@ private struct CommandPaletteRowView: View {
       return "stop.circle"
     case .togglePinWorktree(_, let isCurrentlyPinned):
       return isCurrentlyPinned ? "pin.slash" : "pin"
+    case .renameBranch:
+      return "pencil"
     case .deleteWorktree:
       return "trash"
     case .runCustomCommand(_, _, let systemImage):
@@ -645,7 +647,8 @@ private struct CommandPaletteRowView: View {
       .rerunFailedJobs, .openFailingCheckDetails, .changeFocusedTabIcon,
       .toggleLeftSidebar, .toggleActiveAgentsPanel, .toggleCanvas, .toggleShelf, .showDiff,
       .revealInFinder, .copyPath, .revealInSidebar,
-      .runScript, .stopRunScript, .togglePinWorktree, .deleteWorktree, .runCustomCommand:
+      .runScript, .stopRunScript, .togglePinWorktree, .renameBranch,
+      .deleteWorktree, .runCustomCommand:
       return true
     case .worktreeSelect, .removeWorktree, .archiveWorktree:
       return false
@@ -787,6 +790,8 @@ private struct CommandPaletteRowView: View {
       base = "Stop Script"
     case .togglePinWorktree(_, let isCurrentlyPinned):
       base = isCurrentlyPinned ? "Unpin Worktree" : "Pin Worktree"
+    case .renameBranch:
+      base = "Rename Branch"
     case .deleteWorktree:
       base = "Delete \(row.title)"
     case .runCustomCommand:

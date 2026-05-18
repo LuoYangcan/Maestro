@@ -3,6 +3,8 @@ import SwiftUI
 struct WorktreeDetailTitleView: View {
   let title: DetailToolbarTitle
   let onSubmit: ((String) -> Void)?
+  let externalRenamePrompt: PendingRenameBranchRequest?
+  let onConsumeExternalRenamePrompt: (Int) -> Void
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
 
   @State private var isPresented = false
@@ -13,8 +15,7 @@ struct WorktreeDetailTitleView: View {
     Group {
       if title.supportsRename {
         Button {
-          draftName = title.text
-          isPresented = true
+          openRenamePopover()
         } label: {
           labelContent
         }
@@ -48,6 +49,16 @@ struct WorktreeDetailTitleView: View {
         }
       )
     }
+    .task(id: externalRenamePrompt?.id) {
+      guard let prompt = externalRenamePrompt, title.supportsRename else { return }
+      openRenamePopover()
+      onConsumeExternalRenamePrompt(prompt.id)
+    }
+  }
+
+  private func openRenamePopover() {
+    draftName = title.text
+    isPresented = true
   }
 
   private var labelContent: some View {

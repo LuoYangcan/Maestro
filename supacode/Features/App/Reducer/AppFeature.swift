@@ -143,7 +143,7 @@ struct AppFeature {
   ) -> Bool {
     switch delegate {
     case .selectWorktree, .jumpToLatestUnread, .viewArchivedWorktrees,
-      .newWorktree, .toggleCanvas:
+      .newWorktree, .toggleCanvas, .renameBranch:
       return true
     default:
       return false
@@ -1102,6 +1102,10 @@ struct AppFeature {
 
       case .commandPalette(.delegate(.stopRunScript)):
         return .send(.stopRunScript)
+
+      case .commandPalette(.delegate(.renameBranch)):
+        guard let worktreeID = state.repositories.selectedWorktreeID else { return .none }
+        return .send(.repositories(.requestRenameBranchPrompt(worktreeID)))
 
       case .commandPalette(.delegate(.togglePinWorktree(let worktreeID, let isCurrentlyPinned))):
         if isCurrentlyPinned {

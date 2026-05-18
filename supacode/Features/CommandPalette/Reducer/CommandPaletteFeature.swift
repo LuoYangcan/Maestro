@@ -63,6 +63,7 @@ struct CommandPaletteFeature {
     case runScript
     case stopRunScript
     case togglePinWorktree(Worktree.ID, isCurrentlyPinned: Bool)
+    case renameBranch
     case runCustomCommand(Int)
     #if DEBUG
       case debugTestToast(RepositoriesFeature.StatusToast)
@@ -406,6 +407,15 @@ private func worktreeActionCommandItems(
         category: .worktree,
         kind: .togglePinWorktree(worktreeID, isCurrentlyPinned: row.isPinned),
         keywords: pinKeywords
+      )
+    )
+    items.append(
+      .appShortcut(
+        id: CommandPaletteItemID.globalRenameBranch,
+        title: "Rename Branch",
+        category: .worktree,
+        kind: .renameBranch,
+        keywords: ["rename", "branch", "name"]
       )
     )
     if let repositoryID = repositories.repositoryID(containing: worktreeID) {
@@ -796,6 +806,7 @@ private enum CommandPaletteItemID {
   static let globalRunScript = "global.run-script"
   static let globalStopRunScript = "global.stop-run-script"
   static let globalTogglePinWorktree = "global.toggle-pin-worktree"
+  static let globalRenameBranch = "global.rename-branch"
   static let globalDeleteWorktree = "global.delete-worktree"
 
   static func customCommand(_ commandID: String) -> CommandPaletteItem.ID {
@@ -823,6 +834,7 @@ private enum CommandPaletteItemID {
       globalRunScript,
       globalStopRunScript,
       globalTogglePinWorktree,
+      globalRenameBranch,
       globalDeleteWorktree,
     ]
   }
@@ -950,7 +962,8 @@ private func delegateAction(for kind: CommandPaletteItem.Kind) -> CommandPalette
     .copyPath,
     .revealInSidebar,
     .runScript,
-    .stopRunScript:
+    .stopRunScript,
+    .renameBranch:
     fatalError("appDelegateAction should handle app-level command palette actions")
   }
 }
@@ -983,6 +996,8 @@ private func appDelegateAction(for kind: CommandPaletteItem.Kind) -> CommandPale
     return .runScript
   case .stopRunScript:
     return .stopRunScript
+  case .renameBranch:
+    return .renameBranch
   default:
     return nil
   }
@@ -1063,6 +1078,7 @@ private func pullRequestDelegateAction(
     .runScript,
     .stopRunScript,
     .togglePinWorktree,
+    .renameBranch,
     .deleteWorktree,
     .runCustomCommand:
     return nil

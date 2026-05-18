@@ -128,6 +128,20 @@ struct CommandPaletteFeatureTests {
     #expect(pinItem?.kind == .togglePinWorktree(worktree.id, isCurrentlyPinned: true))
   }
 
+  @Test func commandPaletteItems_includesRenameBranchForNonMainWorktree() {
+    let rootPath = "/tmp/repo-rename"
+    let worktree = makeWorktree(id: "\(rootPath)/wt-1", name: "wt-1", repoRoot: rootPath)
+    let repository = makeRepository(rootPath: rootPath, name: "Repo", worktrees: [worktree])
+    var state = RepositoriesFeature.State(repositories: [repository])
+    state.selection = .worktree(worktree.id)
+
+    let items = CommandPaletteFeature.commandPaletteItems(from: state)
+    let renameItem = items.first { $0.id == "global.rename-branch" }
+    #expect(renameItem?.title == "Rename Branch")
+    #expect(renameItem?.kind == .renameBranch)
+    #expect(renameItem?.appShortcutCommandID == AppShortcuts.CommandID.renameBranch)
+  }
+
   @Test func commandPaletteItems_omitsPinAndDeleteForMainWorktree() {
     let rootPath = "/tmp/repo-main"
     // Main worktree: workingDirectory == repositoryRootURL → Worktree.isMain == true
@@ -145,6 +159,7 @@ struct CommandPaletteFeatureTests {
     let ids = Set(items.map(\.id))
     #expect(!ids.contains("global.toggle-pin-worktree"))
     #expect(!ids.contains("global.delete-worktree"))
+    #expect(!ids.contains("global.rename-branch"))
   }
 
   @Test func commandPaletteItems_includesDeleteWorktreeForNonMain() {
@@ -1647,7 +1662,7 @@ private func testCategory(for kind: CommandPaletteItem.Kind) -> CommandPaletteIt
   case .newWorktree, .refreshWorktrees, .viewArchivedWorktrees,
     .removeWorktree, .archiveWorktree, .changeFocusedTabIcon,
     .runScript, .stopRunScript, .togglePinWorktree,
-    .deleteWorktree, .runCustomCommand:
+    .renameBranch, .deleteWorktree, .runCustomCommand:
     return .worktree
   case .jumpToLatestUnread, .worktreeSelect, .revealInFinder, .copyPath, .revealInSidebar:
     return .navigation
@@ -1674,7 +1689,7 @@ private func testDefaultSuggestion(for kind: CommandPaletteItem.Kind) -> Bool {
     .copyFailingJobURL, .copyCiFailureLogs, .rerunFailedJobs, .openFailingCheckDetails,
     .toggleLeftSidebar, .toggleActiveAgentsPanel, .toggleCanvas, .toggleShelf, .showDiff,
     .revealInFinder, .copyPath, .revealInSidebar,
-    .runScript, .stopRunScript, .togglePinWorktree:
+    .runScript, .stopRunScript, .togglePinWorktree, .renameBranch:
     return true
   case .worktreeSelect, .removeWorktree, .archiveWorktree, .changeFocusedTabIcon,
     .ghosttyCommand, .openRepositoryOnCodeHost,

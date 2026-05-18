@@ -50,6 +50,11 @@ struct PendingSidebarReveal: Equatable, Sendable {
   let worktreeID: Worktree.ID
 }
 
+struct PendingRenameBranchRequest: Equatable, Sendable {
+  let id: Int
+  let worktreeID: Worktree.ID
+}
+
 @Reducer
 struct RepositoriesFeature {
   enum CancelID {
@@ -238,6 +243,8 @@ struct RepositoriesFeature {
     var sidebarSelectedWorktreeIDs: Set<Worktree.ID> = []
     var nextPendingSidebarRevealID = 0
     var pendingSidebarReveal: PendingSidebarReveal?
+    var nextPendingRenameBranchRequestID = 0
+    var pendingRenameBranchRequest: PendingRenameBranchRequest?
     var isSidebarDragActive = false
     var pendingSidebarNotifyReorderIDs: [Worktree.ID] = []
     var activeAgents = ActiveAgentsFeature.State()
@@ -313,6 +320,8 @@ struct RepositoriesFeature {
     case worktreeHistoryForward
     case revealSelectedWorktreeInSidebar
     case consumePendingSidebarReveal(Int)
+    case requestRenameBranchPrompt(Worktree.ID)
+    case consumePendingRenameBranchRequest(Int)
     case requestRenameBranch(Worktree.ID, String)
     case presentAlert(title: String, message: String)
     case worktreeInfoEvent(WorktreeInfoWatcherClient.Event)
@@ -943,6 +952,20 @@ struct RepositoriesFeature {
         case .consumePendingSidebarReveal(let revealID):
           guard state.pendingSidebarReveal?.id == revealID else { return .none }
           state.pendingSidebarReveal = nil
+          return .none
+
+        case .requestRenameBranchPrompt(let worktreeID):
+          guard state.worktree(for: worktreeID) != nil else { return .none }
+          state.nextPendingRenameBranchRequestID += 1
+          state.pendingRenameBranchRequest = .init(
+            id: state.nextPendingRenameBranchRequestID,
+            worktreeID: worktreeID
+          )
+          return .none
+
+        case .consumePendingRenameBranchRequest(let requestID):
+          guard state.pendingRenameBranchRequest?.id == requestID else { return .none }
+          state.pendingRenameBranchRequest = nil
           return .none
 
         case .requestRenameBranch(let worktreeID, let branchName):
