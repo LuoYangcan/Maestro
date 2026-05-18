@@ -577,8 +577,19 @@ struct AppFeatureCommandPaletteTests {
   }
 
   @Test(.dependencies) func openRepositorySettingsDelegateNavigatesAndShowsWindow() async {
+    // Palette handler funnels through the existing
+    // repositories.repositoryManagement.openRepositorySettings flow, which
+    // guards on the repo actually existing.
+    let repository = makeRepository(id: "/tmp/repo-x", worktrees: [])
+    var repositoriesState = RepositoriesFeature.State()
+    repositoriesState.repositories = [repository]
     let shown = LockIsolated(false)
-    let store = TestStore(initialState: AppFeature.State()) {
+    let store = TestStore(
+      initialState: AppFeature.State(
+        repositories: repositoriesState,
+        settings: SettingsFeature.State()
+      )
+    ) {
       AppFeature()
     } withDependencies: {
       $0.settingsWindowClient.show = { shown.withValue { $0 = true } }
@@ -613,7 +624,7 @@ struct AppFeatureCommandPaletteTests {
     await store.receive(\.repositories.githubIntegration.pullRequestAction)
   }
 
-  @Test(.dependencies) func removeWorktreeDispatchesRequest() async {
+  @Test(.dependencies) func deleteWorktreeDispatchesRequest() async {
     let worktree = makeWorktree(
       id: "/tmp/repo-run/wt-1",
       name: "wt-1",
@@ -644,46 +655,8 @@ struct AppFeatureCommandPaletteTests {
       TextState("Delete \(worktree.name)? This deletes the worktree directory and its local branch.")
     }
 
-    await store.send(.commandPalette(.delegate(.removeWorktree(worktree.id, repository.id))))
+    await store.send(.commandPalette(.delegate(.deleteWorktree(worktree.id, repository.id))))
     await store.receive(\.repositories.worktreeLifecycle.requestDeleteWorktree) {
-      $0.repositories.alert = expectedAlert
-    }
-  }
-
-  @Test(.dependencies) func archiveWorktreeDispatchesRequest() async {
-    let worktree = makeWorktree(
-      id: "/tmp/repo-archive/wt-1",
-      name: "wt-1",
-      repoRoot: "/tmp/repo-archive"
-    )
-    let repository = makeRepository(id: "/tmp/repo-archive", worktrees: [worktree])
-    var repositoriesState = RepositoriesFeature.State()
-    repositoriesState.repositories = [repository]
-    let store = TestStore(
-      initialState: AppFeature.State(
-        repositories: repositoriesState,
-        settings: SettingsFeature.State()
-      )
-    ) {
-      AppFeature()
-    }
-
-    let archivedDisplay = AppShortcuts.archivedWorktrees.display
-    let expectedAlert = AlertState<RepositoriesFeature.Alert> {
-      TextState("Archive worktree?")
-    } actions: {
-      ButtonState(role: .destructive, action: .confirmArchiveWorktree(worktree.id, repository.id)) {
-        TextState("Archive (⌘↩)")
-      }
-      ButtonState(role: .cancel) {
-        TextState("Cancel")
-      }
-    } message: {
-      TextState("Find \(worktree.name) later in Menu Bar > Worktrees > Archived Worktrees (\(archivedDisplay)).")
-    }
-
-    await store.send(.commandPalette(.delegate(.archiveWorktree(worktree.id, repository.id))))
-    await store.receive(\.repositories.worktreeLifecycle.requestArchiveWorktree) {
       $0.repositories.alert = expectedAlert
     }
   }

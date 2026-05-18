@@ -89,7 +89,6 @@ enum AppShortcuts {
     static let quitApplication = "quit_application"
     static let openSettings = "open_settings"
     static let openWorktree = "open_worktree"
-    static let copyPath = "copy_path"
     static let openRepository = "open_repository"
     static let openPullRequest = "open_pull_request"
     static let toggleLeftSidebar = "toggle_left_sidebar"
@@ -179,7 +178,6 @@ enum AppShortcuts {
   static let quitApplication = AppShortcut(key: "q", modifiers: .command)
   static let openSettings = AppShortcut(key: ",", modifiers: .command)
   static let openFinder = AppShortcut(key: "o", modifiers: .command)
-  static let copyPath = AppShortcut(key: "c", modifiers: [.command, .shift])
   static let openRepository = AppShortcut(key: "o", modifiers: [.command, .shift])
   static let openPullRequest = AppShortcut(key: "g", modifiers: [.command, .control])
   static let toggleLeftSidebar = AppShortcut(key: "s", modifiers: [.command, .control])
@@ -376,12 +374,6 @@ enum AppShortcuts {
       title: "Open Worktree",
       scope: .configurableAppAction,
       shortcut: openFinder
-    ),
-    .init(
-      id: CommandID.copyPath,
-      title: "Copy Path",
-      scope: .configurableAppAction,
-      shortcut: copyPath
     ),
     .init(
       id: CommandID.openRepository,
@@ -868,7 +860,6 @@ enum AppShortcuts {
     newWorktree,
     openSettings,
     openFinder,
-    copyPath,
     openRepository,
     openPullRequest,
     toggleLeftSidebar,

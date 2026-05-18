@@ -1028,11 +1028,8 @@ struct AppFeature {
       case .commandPalette(.delegate(.openRepository)):
         return .send(.repositories(.setOpenPanelPresented(true)))
 
-      case .commandPalette(.delegate(.removeWorktree(let worktreeID, let repositoryID))):
+      case .commandPalette(.delegate(.deleteWorktree(let worktreeID, let repositoryID))):
         return .send(.repositories(.worktreeLifecycle(.requestDeleteWorktree(worktreeID, repositoryID))))
-
-      case .commandPalette(.delegate(.archiveWorktree(let worktreeID, let repositoryID))):
-        return .send(.repositories(.worktreeLifecycle(.requestArchiveWorktree(worktreeID, repositoryID))))
 
       case .commandPalette(.delegate(.viewArchivedWorktrees)):
         return .send(.repositories(.selectArchivedWorktrees))
@@ -1108,12 +1105,10 @@ struct AppFeature {
         return .send(.repositories(.requestRenameBranchPrompt(worktreeID)))
 
       case .commandPalette(.delegate(.openRepositorySettings(let repositoryID))):
-        return .merge(
-          .send(.settings(.setSelection(.repository(repositoryID)))),
-          .run { _ in
-            await settingsWindowClient.show()
-          }
-        )
+        // Reuse the existing repo-side flow so the repo-existence guard and
+        // settingsWindowClient.show() live in one place
+        // (.repositories(.delegate(.openRepositorySettings(_))) at line ~441).
+        return .send(.repositories(.repositoryManagement(.openRepositorySettings(repositoryID))))
 
       case .commandPalette(.delegate(.togglePinWorktree(let worktreeID, let isCurrentlyPinned))):
         if isCurrentlyPinned {

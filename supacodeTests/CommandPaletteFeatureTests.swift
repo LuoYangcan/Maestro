@@ -786,66 +786,12 @@ struct CommandPaletteFeatureTests {
     )
 
     #expect(
-      items.contains {
-        if case .removeWorktree = $0.kind {
-          return true
-        }
-        return false
-      } == false
-    )
-    #expect(
-      items.contains {
-        if case .archiveWorktree = $0.kind {
-          return true
-        }
-        return false
-      } == false
-    )
-    #expect(
       items.filter {
         if case .worktreeSelect = $0.kind {
           return true
         }
         return false
       }.count == 1
-    )
-  }
-
-  @Test func commandPaletteItems_omitsSubActionsForNonMainWorktree() {
-    let rootPath = "/tmp/repo"
-    let main = makeWorktree(
-      id: rootPath,
-      name: "repo",
-      detail: "main",
-      repoRoot: rootPath,
-      workingDirectory: rootPath
-    )
-    let feature = makeWorktree(
-      id: "\(rootPath)/wt-feature",
-      name: "feature",
-      detail: "feature",
-      repoRoot: rootPath
-    )
-    let repository = makeRepository(rootPath: rootPath, name: "Repo", worktrees: [main, feature])
-    let items = CommandPaletteFeature.commandPaletteItems(
-      from: RepositoriesFeature.State(repositories: [repository])
-    )
-
-    #expect(
-      items.contains {
-        if case .removeWorktree = $0.kind {
-          return true
-        }
-        return false
-      } == false
-    )
-    #expect(
-      items.contains {
-        if case .archiveWorktree = $0.kind {
-          return true
-        }
-        return false
-      } == false
     )
   }
 
@@ -984,21 +930,21 @@ struct CommandPaletteFeatureTests {
       subtitle: "main",
       kind: .worktreeSelect("wt-fox")
     )
-    let archiveFox = makeItem(
-      id: "worktree.fox.archive",
-      title: "Repo / fox",
-      subtitle: "Archive Worktree - main",
-      kind: .archiveWorktree("wt-fox", "repo-fox")
+    let deleteFox = makeItem(
+      id: "worktree.fox.delete",
+      title: "Delete Worktree",
+      subtitle: "fox",
+      kind: .deleteWorktree("wt-fox", "repo-fox")
     )
-    let removeFox = makeItem(
-      id: "worktree.fox.remove",
-      title: "Repo / fox",
-      subtitle: "Remove Worktree - main",
-      kind: .removeWorktree("wt-fox", "repo-fox")
+    let changeFoxIcon = makeItem(
+      id: "worktree.fox.change-icon",
+      title: "Change Tab Icon...",
+      subtitle: "fox",
+      kind: .changeFocusedTabIcon("wt-fox")
     )
 
     let result = CommandPaletteFeature.filterItems(
-      items: [openSettings, newWorktree, selectFox, archiveFox, removeFox],
+      items: [openSettings, newWorktree, selectFox, deleteFox, changeFoxIcon],
       query: ""
     )
     expectNoDifference(result.map(\.id), [openSettings.id, newWorktree.id])
@@ -1694,7 +1640,7 @@ private func testCategory(for kind: CommandPaletteItem.Kind) -> CommandPaletteIt
     .openRepositorySettings:
     return .app
   case .newWorktree, .refreshWorktrees, .viewArchivedWorktrees,
-    .removeWorktree, .archiveWorktree, .changeFocusedTabIcon,
+    .changeFocusedTabIcon,
     .runScript, .stopRunScript, .togglePinWorktree,
     .renameBranch, .deleteWorktree, .runCustomCommand:
     return .worktree
@@ -1726,7 +1672,7 @@ private func testDefaultSuggestion(for kind: CommandPaletteItem.Kind) -> Bool {
     .runScript, .stopRunScript, .togglePinWorktree, .renameBranch,
     .openRepositorySettings:
     return true
-  case .worktreeSelect, .removeWorktree, .archiveWorktree, .changeFocusedTabIcon,
+  case .worktreeSelect, .changeFocusedTabIcon,
     .ghosttyCommand, .openRepositoryOnCodeHost,
     .deleteWorktree, .runCustomCommand:
     return false

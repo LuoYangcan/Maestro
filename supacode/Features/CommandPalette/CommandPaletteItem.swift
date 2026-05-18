@@ -46,8 +46,6 @@ struct CommandPaletteItem: Identifiable, Equatable {
     case worktreeSelect(Worktree.ID)
     case openSettings
     case newWorktree
-    case removeWorktree(Worktree.ID, Repository.ID)
-    case archiveWorktree(Worktree.ID, Repository.ID)
     case viewArchivedWorktrees
     case refreshWorktrees
     case jumpToLatestUnread
@@ -143,8 +141,6 @@ struct CommandPaletteItem: Identifiable, Equatable {
       .openFailingCheckDetails,
       .installCLI,
       .worktreeSelect,
-      .removeWorktree,
-      .archiveWorktree,
       .changeFocusedTabIcon,
       .revealInFinder,
       .copyPath,

@@ -544,10 +544,6 @@ private struct CommandPaletteRowView: View {
       .runScript, .stopRunScript, .togglePinWorktree, .renameBranch,
       .openRepositorySettings, .runCustomCommand:
       return nil
-    case .removeWorktree:
-      return "Remove"
-    case .archiveWorktree:
-      return "Archive"
     case .deleteWorktree:
       return "Delete"
     #if DEBUG
@@ -597,10 +593,6 @@ private struct CommandPaletteRowView: View {
       return nil
     case .changeFocusedTabIcon:
       return "rectangle.on.rectangle"
-    case .removeWorktree:
-      return "trash"
-    case .archiveWorktree:
-      return "archivebox"
     case .toggleLeftSidebar:
       return "sidebar.left"
     case .toggleActiveAgentsPanel:
@@ -654,7 +646,7 @@ private struct CommandPaletteRowView: View {
       .openRepositorySettings,
       .deleteWorktree, .runCustomCommand:
       return true
-    case .worktreeSelect, .removeWorktree, .archiveWorktree:
+    case .worktreeSelect:
       return false
     #if DEBUG
       case .debugTestToast, .debugSimulateUpdateFound:
@@ -748,10 +740,6 @@ private struct CommandPaletteRowView: View {
       base = "Jump to Latest Unread"
     case .ghosttyCommand:
       base = row.title
-    case .removeWorktree:
-      base = "Remove \(row.title)"
-    case .archiveWorktree:
-      base = "Archive \(row.title)"
     case .openPullRequest, .openRepositoryOnCodeHost:
       base = row.title
     case .markPullRequestReady:

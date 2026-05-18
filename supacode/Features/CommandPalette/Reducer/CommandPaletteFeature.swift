@@ -36,8 +36,7 @@ struct CommandPaletteFeature {
     case openSettings
     case newWorktree
     case openRepository
-    case removeWorktree(Worktree.ID, Repository.ID)
-    case archiveWorktree(Worktree.ID, Repository.ID)
+    case deleteWorktree(Worktree.ID, Repository.ID)
     case viewArchivedWorktrees
     case refreshWorktrees
     case jumpToLatestUnread
@@ -955,11 +954,8 @@ private func delegateAction(for kind: CommandPaletteItem.Kind) -> CommandPalette
   switch kind {
   case .worktreeSelect(let id):
     return .selectWorktree(id)
-  case .removeWorktree(let worktreeID, let repositoryID),
-    .deleteWorktree(let worktreeID, let repositoryID):
-    return .removeWorktree(worktreeID, repositoryID)
-  case .archiveWorktree(let worktreeID, let repositoryID):
-    return .archiveWorktree(worktreeID, repositoryID)
+  case .deleteWorktree(let worktreeID, let repositoryID):
+    return .deleteWorktree(worktreeID, repositoryID)
   case .ghosttyCommand(let action):
     return .ghosttyCommand(action)
   case .changeFocusedTabIcon(let worktreeID):
@@ -1100,8 +1096,6 @@ private func pullRequestDelegateAction(
     .openSettings,
     .newWorktree,
     .openRepository,
-    .removeWorktree,
-    .archiveWorktree,
     .viewArchivedWorktrees,
     .refreshWorktrees,
     .jumpToLatestUnread,

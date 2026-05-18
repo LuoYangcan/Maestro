@@ -10,7 +10,7 @@ struct AppShortcutsTests {
     let shortcuts: [AppShortcut] = [
       AppShortcuts.openSettings,
       AppShortcuts.newWorktree,
-      AppShortcuts.copyPath,
+      AppShortcuts.openRepository,
     ]
 
     for shortcut in shortcuts {
