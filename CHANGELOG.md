@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026.5.20](https://github.com/onevcat/Prowl/releases/tag/v2026.5.20)
+
+### Fixed
+
+- The PR chip on the main worktree no longer shows a stale badge from a previously merged pull request. Merged PRs are now correctly ignored when the main branch is checked out.
+
+### Improved
+
+- Internal build and CI improvements; no user-facing behavior changes.
+
 ## [2026.5.19](https://github.com/onevcat/Prowl/releases/tag/v2026.5.19)
 
 This release significantly expands the command palette, making it the central hub for navigating and controlling Prowl.
