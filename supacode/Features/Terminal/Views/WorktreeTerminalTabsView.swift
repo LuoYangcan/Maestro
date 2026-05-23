@@ -13,7 +13,8 @@ struct WorktreeTerminalTabsView: View {
   var body: some View {
     let state = manager.state(for: worktree) { shouldRunSetupScript }
     let _ = configReloadCounter
-    VStack(spacing: 0) {
+    // 4pt gap between the tab bar and the terminal surface below it.
+    VStack(spacing: 4) {
       tabBar(state: state)
       tabContent(state: state)
     }
