@@ -1041,6 +1041,11 @@ final class GhosttySurfaceView: NSView, Identifiable {
     bridge.surface = surface
     occlusionState.reset()
     lastSurfaceFocus = nil
+    // A freshly created Ghostty surface defaults to focused (blinking cursor).
+    // Sync it to our Swift-side `focused` flag so background/restored surfaces
+    // that were never explicitly focused don't blink. `focusDidChange(false)`
+    // would no-op here (self.focused already false), so push the state directly.
+    setSurfaceFocus(focused)
     updateSurfaceSize()
   }
 
