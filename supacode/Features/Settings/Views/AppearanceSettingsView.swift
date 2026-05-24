@@ -90,7 +90,7 @@ struct AppearanceSettingsView: View {
               Text(mode.title).tag(mode)
             }
           }
-          .help("View Prowl starts in on launch. Shelf requires at least one worktree or folder.")
+          .help("View Prowl starts in on launch. Shelf and Canvas require at least one worktree or folder.")
         }
         Section("Default Editor") {
           Picker(

@@ -495,11 +495,18 @@ struct RepositoriesFeature {
           // Restore clears the selection we just set, and any books not
           // in the saved layout would linger as stray spines.
           @Shared(.settingsFile) var settingsFile
-          if settingsFile.global.defaultViewMode == .shelf,
-            state.launchRestoreMode != .restoreLayout,
-            !state.isShelfActive
-          {
-            allEffects.append(.send(.toggleShelf))
+          if state.launchRestoreMode != .restoreLayout {
+            switch settingsFile.global.defaultViewMode {
+            case .shelf where !state.isShelfActive:
+              allEffects.append(.send(.toggleShelf))
+            case .canvas where !state.isShowingCanvas:
+              // `.toggleCanvas` shares Shelf's guards: it only enters
+              // when at least one worktree row exists, otherwise it
+              // falls back to Normal.
+              allEffects.append(.send(.toggleCanvas))
+            case .normal, .shelf, .canvas:
+              break
+            }
           }
           return .merge(allEffects)
 

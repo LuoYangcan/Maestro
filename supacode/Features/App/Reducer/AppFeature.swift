@@ -1259,6 +1259,9 @@ struct AppFeature {
         let shouldEnterShelf =
           settingsFile.global.defaultViewMode == .shelf
           && !state.repositories.isShelfActive
+        let shouldEnterCanvas =
+          settingsFile.global.defaultViewMode == .canvas
+          && !state.repositories.isShowingCanvas
         var effects: [Effect<Action>] = []
         if let selectedWorktreeID {
           // Plain folders use .repository selection, not .worktree
@@ -1272,6 +1275,11 @@ struct AppFeature {
         }
         if shouldEnterShelf {
           effects.append(.send(.repositories(.toggleShelf)))
+        }
+        // Enter Canvas after the selection effects so `.selectCanvas`
+        // records the just-selected worktree as the pre-Canvas anchor.
+        if shouldEnterCanvas {
+          effects.append(.send(.repositories(.toggleCanvas)))
         }
         return effects.isEmpty ? .none : .merge(effects)
 
