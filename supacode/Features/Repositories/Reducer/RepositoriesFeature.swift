@@ -1439,7 +1439,7 @@ struct RepositoriesFeature {
                   rootURL: rootURL,
                   name: Repository.name(for: rootURL),
                   kind: .git,
-                  worktrees: IdentifiedArray(uniqueElements: worktrees)
+                  worktrees: IdentifiedArray(worktrees, uniquingIDsWith: { current, _ in current })
                 ),
                 errorMessage: nil
               )

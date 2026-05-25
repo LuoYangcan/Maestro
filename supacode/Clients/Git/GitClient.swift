@@ -93,11 +93,15 @@ struct GitClient {
     let data = Data(trimmed.utf8)
     let entries = try JSONDecoder().decode([GitWtWorktreeEntry].self, from: data)
       .filter { !$0.isBare }
-    let worktreeEntries = entries.enumerated().map { index, entry in
+    var seenWorktreeIDs = Set<Worktree.ID>()
+    let worktreeEntries: [WorktreeSortEntry] = entries.enumerated().compactMap { index, entry -> WorktreeSortEntry? in
       let worktreeURL = URL(fileURLWithPath: entry.path).standardizedFileURL
       let name = entry.branch.isEmpty ? worktreeURL.lastPathComponent : entry.branch
       let detail = Self.relativePath(from: repositoryRootURL, to: worktreeURL)
       let id = worktreeURL.path(percentEncoded: false)
+      guard seenWorktreeIDs.insert(id).inserted else {
+        return nil
+      }
       let resourceValues = try? worktreeURL.resourceValues(forKeys: [
         .creationDateKey, .contentModificationDateKey,
       ])

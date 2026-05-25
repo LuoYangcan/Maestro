@@ -310,7 +310,7 @@ extension RepositorySnapshotCachePayload {
         rootURL: rootURL,
         name: repositoryName.isEmpty ? Repository.name(for: rootURL) : repositoryName,
         kind: kind,
-        worktrees: IdentifiedArray(uniqueElements: restoredWorktrees)
+        worktrees: IdentifiedArray(restoredWorktrees, uniquingIDsWith: { current, _ in current })
       )
     }
   }

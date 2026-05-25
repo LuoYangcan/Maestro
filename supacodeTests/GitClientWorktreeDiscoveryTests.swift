@@ -140,6 +140,31 @@ struct GitClientWorktreeDiscoveryTests {
     #expect(recorder.loginInvocations().isEmpty)
   }
 
+  @Test func worktreesDeduplicateStandardizedPaths() async throws {
+    let output = """
+      [
+        {"branch":"main","path":"/tmp/repo","head":"abc","is_bare":false},
+        {"branch":"feature","path":"/tmp/repo/.worktrees/feature","head":"def","is_bare":false},
+        {"branch":"feature","path":"/tmp/repo/.worktrees/./feature","head":"def","is_bare":false}
+      ]
+      """
+    let shell = ShellClient(
+      run: { _, _, _ in
+        ShellOutput(stdout: output, stderr: "", exitCode: 0)
+      },
+      runLoginImpl: { _, _, _, _ in
+        Issue.record("worktrees should not use runLogin when direct execution succeeds")
+        return ShellOutput(stdout: "", stderr: "", exitCode: 0)
+      }
+    )
+    let client = GitClient(shell: shell)
+    let repoRoot = URL(fileURLWithPath: "/tmp/repo")
+
+    let worktrees = try await client.worktrees(for: repoRoot)
+
+    #expect(worktrees.map(\.id) == ["/tmp/repo", "/tmp/repo/.worktrees/feature"])
+  }
+
   @Test func repoRootFallsBackToLoginShellWhenDirectExecutionCannotResolveGit() async throws {
     let recorder = GitWorktreeDiscoveryRecorder()
     let shell = ShellClient(
