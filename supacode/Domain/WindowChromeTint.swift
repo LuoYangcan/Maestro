@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Unified color logic for the window *chrome* tint — the nav-panel band
@@ -17,6 +18,20 @@ import SwiftUI
 ///   pair the Shelf spine uses, so the chrome and the open spine match.
 /// - `.custom` ⇒ a single user-chosen color, ignoring per-repo colors.
 enum WindowChromeTint {
+  struct RGBComponents: Equatable {
+    var red: Double
+    var green: Double
+    var blue: Double
+
+    var color: Color {
+      Color(.sRGB, red: red, green: green, blue: blue)
+    }
+
+    var luminance: Double {
+      0.2126 * red + 0.7152 * green + 0.0722 * blue
+    }
+  }
+
   /// A resolved chrome band: a base color plus the alpha it should be
   /// filled at. `nil` from `fill(...)` means "draw no band".
   struct Fill: Equatable {
@@ -73,6 +88,58 @@ enum WindowChromeTint {
       guard let customColor else { return nil }
       return Fill(color: customColor, alpha: saturatedPeakAlpha)
     }
+  }
+
+  /// Resolves the toolbar background to an opaque sRGB color under the
+  /// requested app appearance. `toolbarBackground` sits on the real AppKit
+  /// toolbar surface, so a translucent semantic color can otherwise be
+  /// resolved against the system appearance captured when the app launched.
+  static func toolbarBackgroundComponents(
+    fill: Fill?,
+    colorScheme: ColorScheme
+  ) -> RGBComponents {
+    let base = resolvedComponents(for: NSColor.windowBackgroundColor, colorScheme: colorScheme)
+    guard let fill else {
+      return base
+    }
+
+    let overlay = resolvedComponents(for: fill.color, colorScheme: colorScheme)
+    let alpha = min(max(fill.alpha, 0), 1)
+    return RGBComponents(
+      red: overlay.red * alpha + base.red * (1 - alpha),
+      green: overlay.green * alpha + base.green * (1 - alpha),
+      blue: overlay.blue * alpha + base.blue * (1 - alpha)
+    )
+  }
+
+  private static func resolvedComponents(for color: Color, colorScheme: ColorScheme) -> RGBComponents {
+    resolvedComponents(for: NSColor(color), colorScheme: colorScheme)
+  }
+
+  private static func resolvedComponents(for color: NSColor, colorScheme: ColorScheme) -> RGBComponents {
+    withAppearance(for: colorScheme) {
+      let resolved = color.usingColorSpace(.sRGB) ?? fallbackColor(for: colorScheme)
+      return RGBComponents(
+        red: Double(resolved.redComponent),
+        green: Double(resolved.greenComponent),
+        blue: Double(resolved.blueComponent)
+      )
+    }
+  }
+
+  private static func withAppearance<T>(for colorScheme: ColorScheme, _ body: () -> T) -> T {
+    guard let appearance = NSAppearance(named: colorScheme == .dark ? .darkAqua : .aqua) else {
+      return body()
+    }
+
+    let previous = NSAppearance.current
+    NSAppearance.current = appearance
+    defer { NSAppearance.current = previous }
+    return body()
+  }
+
+  private static func fallbackColor(for colorScheme: ColorScheme) -> NSColor {
+    colorScheme == .dark ? .black : .white
   }
 }
 
@@ -155,16 +222,17 @@ private struct WindowChromeTintModifier: ViewModifier {
 
 private struct WindowToolbarChromeBackgroundModifier: ViewModifier {
   let fill: WindowChromeTint.Fill?
+  @Environment(\.colorScheme) private var colorScheme
 
   @ViewBuilder
   func body(content: Content) -> some View {
-    if let fill {
-      content
-        .toolbarBackground(fill.color.opacity(fill.alpha), for: .windowToolbar)
-        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
-    } else {
-      content
-        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
-    }
+    let background = WindowChromeTint.toolbarBackgroundComponents(
+      fill: fill,
+      colorScheme: colorScheme
+    ).color
+
+    content
+      .toolbarBackground(background, for: .windowToolbar)
+      .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
   }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import Testing
 
@@ -41,6 +42,38 @@ struct WindowChromeTintTests {
   func repositoryPeakAlphaIsGentlerWhenUncolored() {
     #expect(WindowChromeTint.repositoryPeakAlpha(for: nil) == WindowChromeTint.neutralPeakAlpha)
     #expect(WindowChromeTint.repositoryPeakAlpha(for: .blue) == WindowChromeTint.saturatedPeakAlpha)
+  }
+
+  // MARK: - Toolbar background resolution
+
+  @Test
+  func toolbarBackgroundUsesRequestedColorSchemeForNeutralChrome() {
+    let light = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+    let dark = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .dark)
+
+    #expect(light.luminance > dark.luminance)
+  }
+
+  @Test
+  func toolbarBackgroundUsesRequestedColorSchemeForPrimaryTintFallback() {
+    let fill = WindowChromeTint.Fill(color: .primary, alpha: WindowChromeTint.neutralPeakAlpha)
+    let light = WindowChromeTint.toolbarBackgroundComponents(fill: fill, colorScheme: .light)
+    let dark = WindowChromeTint.toolbarBackgroundComponents(fill: fill, colorScheme: .dark)
+
+    #expect(light.luminance > dark.luminance)
+  }
+
+  @Test
+  func toolbarBackgroundIgnoresCurrentSystemAppearance() {
+    let previous = NSAppearance.current
+    defer { NSAppearance.current = previous }
+
+    NSAppearance.current = NSAppearance(named: .darkAqua)
+    let lightWhileCurrentIsDark = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+    NSAppearance.current = NSAppearance(named: .aqua)
+    let lightWhileCurrentIsLight = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+
+    #expect(lightWhileCurrentIsDark == lightWhileCurrentIsLight)
   }
 
   // MARK: - TintColor persistence
