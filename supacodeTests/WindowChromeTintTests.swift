@@ -65,13 +65,12 @@ struct WindowChromeTintTests {
 
   @Test
   func toolbarBackgroundIgnoresCurrentSystemAppearance() {
-    let previous = NSAppearance.current
-    defer { NSAppearance.current = previous }
-
-    NSAppearance.current = NSAppearance(named: .darkAqua)
-    let lightWhileCurrentIsDark = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
-    NSAppearance.current = NSAppearance(named: .aqua)
-    let lightWhileCurrentIsLight = WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+    let lightWhileCurrentIsDark = withDrawingAppearance(.darkAqua) {
+      WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+    }
+    let lightWhileCurrentIsLight = withDrawingAppearance(.aqua) {
+      WindowChromeTint.toolbarBackgroundComponents(fill: nil, colorScheme: .light)
+    }
 
     #expect(lightWhileCurrentIsDark == lightWhileCurrentIsLight)
   }
@@ -84,5 +83,17 @@ struct WindowChromeTintTests {
     let data = try JSONEncoder().encode(original)
     let decoded = try JSONDecoder().decode(TintColor.self, from: data)
     #expect(decoded == original)
+  }
+
+  private func withDrawingAppearance<T>(_ name: NSAppearance.Name, _ body: () -> T) -> T {
+    guard let appearance = NSAppearance(named: name) else {
+      return body()
+    }
+
+    var result: T?
+    appearance.performAsCurrentDrawingAppearance {
+      result = body()
+    }
+    return result!
   }
 }

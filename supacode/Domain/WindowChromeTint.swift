@@ -132,10 +132,11 @@ enum WindowChromeTint {
       return body()
     }
 
-    let previous = NSAppearance.current
-    NSAppearance.current = appearance
-    defer { NSAppearance.current = previous }
-    return body()
+    var result: T?
+    appearance.performAsCurrentDrawingAppearance {
+      result = body()
+    }
+    return result!
   }
 
   private static func fallbackColor(for colorScheme: ColorScheme) -> NSColor {
