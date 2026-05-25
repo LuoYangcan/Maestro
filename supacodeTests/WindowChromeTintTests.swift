@@ -81,6 +81,38 @@ struct WindowChromeTintTests {
     #expect(WindowChromeTint.usesExplicitToolbarBackground(isFullScreen: true))
   }
 
+  @Test
+  func toolbarFallbackTurnsOnAtStartOfEnterFullScreenTransition() {
+    #expect(
+      WindowChromeTint.toolbarFallbackState(
+        current: false,
+        event: .willEnterFullScreen
+      )
+    )
+    #expect(
+      WindowChromeTint.toolbarFallbackState(
+        current: false,
+        event: .didEnterFullScreen
+      )
+    )
+  }
+
+  @Test
+  func toolbarFallbackStaysOnUntilExitFullScreenFinishes() {
+    #expect(
+      WindowChromeTint.toolbarFallbackState(
+        current: true,
+        event: .willExitFullScreen
+      )
+    )
+    #expect(
+      !WindowChromeTint.toolbarFallbackState(
+        current: true,
+        event: .didExitFullScreen
+      )
+    )
+  }
+
   // MARK: - TintColor persistence
 
   @Test

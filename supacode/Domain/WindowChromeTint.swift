@@ -18,6 +18,14 @@ import SwiftUI
 ///   pair the Shelf spine uses, so the chrome and the open spine match.
 /// - `.custom` ⇒ a single user-chosen color, ignoring per-repo colors.
 enum WindowChromeTint {
+  enum ToolbarFallbackEvent {
+    case windowState(isFullScreen: Bool)
+    case willEnterFullScreen
+    case didEnterFullScreen
+    case willExitFullScreen
+    case didExitFullScreen
+  }
+
   struct RGBComponents: Equatable {
     var red: Double
     var green: Double
@@ -147,6 +155,17 @@ enum WindowChromeTint {
 
   static func usesExplicitToolbarBackground(isFullScreen: Bool) -> Bool {
     isFullScreen
+  }
+
+  static func toolbarFallbackState(current: Bool, event: ToolbarFallbackEvent) -> Bool {
+    switch event {
+    case .windowState(let isFullScreen):
+      return isFullScreen
+    case .willEnterFullScreen, .didEnterFullScreen, .willExitFullScreen:
+      return true
+    case .didExitFullScreen:
+      return false
+    }
   }
 }
 
@@ -312,16 +331,16 @@ private final class WindowFullScreenReaderView: NSView {
     }
 
     observe(window, name: NSWindow.willEnterFullScreenNotification) { [weak self] in
-      self?.publishFullScreenState(true)
+      self?.publishFullScreenEvent(.willEnterFullScreen)
     }
     observe(window, name: NSWindow.didEnterFullScreenNotification) { [weak self] in
-      self?.publishFullScreenState(true)
+      self?.publishFullScreenEvent(.didEnterFullScreen)
     }
     observe(window, name: NSWindow.willExitFullScreenNotification) { [weak self] in
-      self?.publishFullScreenState(true)
+      self?.publishFullScreenEvent(.willExitFullScreen)
     }
     observe(window, name: NSWindow.didExitFullScreenNotification) { [weak self] in
-      self?.publishFullScreenState(false)
+      self?.publishFullScreenEvent(.didExitFullScreen)
     }
 
     publishFullScreenState()
@@ -354,10 +373,15 @@ private final class WindowFullScreenReaderView: NSView {
 
   private func publishFullScreenState() {
     guard let window else { return }
-    publishFullScreenState(window.styleMask.contains(.fullScreen))
+    publishFullScreenEvent(.windowState(isFullScreen: window.styleMask.contains(.fullScreen)))
   }
 
-  private func publishFullScreenState(_ isFullScreen: Bool) {
-    onFullScreenChange?(isFullScreen)
+  private func publishFullScreenEvent(_ event: WindowChromeTint.ToolbarFallbackEvent) {
+    onFullScreenChange?(
+      WindowChromeTint.toolbarFallbackState(
+        current: window?.styleMask.contains(.fullScreen) == true,
+        event: event
+      )
+    )
   }
 }
