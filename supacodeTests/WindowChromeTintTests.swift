@@ -43,6 +43,18 @@ struct WindowChromeTintTests {
     #expect(WindowChromeTint.repositoryPeakAlpha(for: .blue) == WindowChromeTint.saturatedPeakAlpha)
   }
 
+  // MARK: - Chrome metrics
+
+  @Test
+  func topBandHeightUsesWindowChromeFallbackWhenSafeAreaCollapses() {
+    #expect(WindowChromeTint.topBandHeight(safeAreaTop: 0, windowChromeTop: 52) == 52)
+  }
+
+  @Test
+  func topBandHeightPrefersLargerSafeAreaMeasurement() {
+    #expect(WindowChromeTint.topBandHeight(safeAreaTop: 54, windowChromeTop: 28) == 54)
+  }
+
   // MARK: - TintColor persistence
 
   @Test
