@@ -15,7 +15,11 @@ struct DockClient {
 extension DockClient: DependencyKey {
   static let liveValue = DockClient(
     setNotificationBadge: { count in
-      NSApplication.shared.dockTile.badgeLabel = count > 0 ? String(count) : nil
+      let dockTile = NSApplication.shared.dockTile
+      dockTile.badgeLabel = count > 0 ? String(count) : nil
+      // Setting `badgeLabel` alone doesn't always repaint the tile; force a
+      // redraw so the badge actually appears/clears.
+      dockTile.display()
     },
     bounce: { mode in
       switch mode {
