@@ -14,6 +14,11 @@ import Sentry
 import Sharing
 import SwiftUI
 
+@MainActor
+private final class SupacodeAppStoreBox {
+  weak var store: StoreOf<AppFeature>?
+}
+
 private enum GhosttyCLI {
   static func argv(resolvedKeybindings: ResolvedKeybindingMap) -> [UnsafeMutablePointer<CChar>?] {
     var args: [UnsafeMutablePointer<CChar>?] = []
@@ -95,6 +100,7 @@ struct SupacodeApp: App {
   @State private var ghosttyShortcuts: GhosttyShortcutManager
   @State private var terminalManager: WorktreeTerminalManager
   @State private var worktreeInfoWatcher: WorktreeInfoWatcherManager
+  @State private var pullRequestRefreshCoordinator: PullRequestRefreshCoordinator
   @State private var commandKeyObserver: CommandKeyObserver
   @State private var cliSocketServer: CLISocketServer
   @State private var store: StoreOf<AppFeature>
@@ -186,6 +192,9 @@ struct SupacodeApp: App {
     _terminalManager = State(initialValue: terminalManager)
     let worktreeInfoWatcher = WorktreeInfoWatcherManager()
     _worktreeInfoWatcher = State(initialValue: worktreeInfoWatcher)
+    let storeBox = SupacodeAppStoreBox()
+    let coordinator = Self.makePullRequestRefreshCoordinator(storeBox: storeBox)
+    _pullRequestRefreshCoordinator = State(initialValue: coordinator)
     let keyObserver = CommandKeyObserver()
     _commandKeyObserver = State(initialValue: keyObserver)
     var initialAppState = AppFeature.State(settings: SettingsFeature.State(settings: initialSettings))
@@ -207,8 +216,12 @@ struct SupacodeApp: App {
           worktreeInfoWatcher.eventStream()
         }
       )
+      values.pullRequestRefreshCoordinator = Self.makePullRequestRefreshCoordinatorClient(
+        coordinator: coordinator
+      )
     }
     _store = State(initialValue: appStore)
+    storeBox.store = appStore
 
     let cliServer = Self.makeCLISocketServer(appStore: appStore, terminalManager: terminalManager)
     _cliSocketServer = State(initialValue: cliServer)
@@ -233,6 +246,42 @@ struct SupacodeApp: App {
     #if DEBUG
       DebugWindowManager.shared.configure(store: appStore)
     #endif
+  }
+
+  @MainActor
+  private static func makePullRequestRefreshCoordinator(
+    storeBox: SupacodeAppStoreBox
+  ) -> PullRequestRefreshCoordinator {
+    PullRequestRefreshCoordinator(
+      githubCLI: .liveValue,
+      clock: ContinuousClock()
+    ) { outcome in
+      storeBox.store?.send(
+        .repositories(.githubIntegration(.pullRequestRefreshBatchOutcome(outcome)))
+      )
+    }
+  }
+
+  private static func makePullRequestRefreshCoordinatorClient(
+    coordinator: PullRequestRefreshCoordinator
+  ) -> PullRequestRefreshCoordinatorClient {
+    PullRequestRefreshCoordinatorClient(
+      enqueue: { request in
+        Task { @MainActor in
+          coordinator.enqueue(request)
+        }
+      },
+      cancelHost: { host in
+        Task { @MainActor in
+          coordinator.cancelHost(host)
+        }
+      },
+      reset: {
+        Task { @MainActor in
+          coordinator.reset()
+        }
+      }
+    )
   }
 
   private static func makeMemoryWatchdog(
