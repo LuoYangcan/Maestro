@@ -330,7 +330,6 @@ nonisolated private func batchPullRequestsFetcher(
 
 nonisolated private let crossRepoBatchAliasLimit = 15
 nonisolated private let crossRepoBatchMaxConcurrentRequests = 3
-nonisolated private let crossRepoBatchLogger = SupaLogger("BPR")
 
 nonisolated private struct CrossRepoChunkOutcome: Sendable {
   let successByRepo: [RepoKey: [String: GithubPullRequest]]
@@ -347,10 +346,6 @@ nonisolated private func batchPullRequestsAcrossRepositoriesFetcher(
       return CrossRepoPullRequestResult()
     }
     let chunks = makeCrossRepoChunks(cleaned, chunkSize: crossRepoBatchAliasLimit)
-    // [BPR] remove after manual verification
-    crossRepoBatchLogger.debug(
-      "batch start host=\(host) repos=\(cleaned.count) chunks=\(chunks.count)"
-    )
     let outcomes = try await loadCrossRepoChunks(
       shell: shell,
       resolver: resolver,
@@ -415,8 +410,7 @@ nonisolated private func loadCrossRepoChunks(
           shell: shell,
           resolver: resolver,
           host: host,
-          chunk: chunk,
-          chunkIndex: chunkIndex
+          chunk: chunk
         )
         return (chunkIndex, outcome)
       }
@@ -433,8 +427,7 @@ nonisolated private func loadCrossRepoChunks(
             shell: shell,
             resolver: resolver,
             host: host,
-            chunk: candidateChunk,
-            chunkIndex: candidateIndex
+            chunk: candidateChunk
           )
           return (candidateIndex, outcome)
         }
@@ -465,14 +458,9 @@ nonisolated private func fetchCrossRepoChunk(
   shell: ShellClient,
   resolver: GithubCLIExecutableResolver,
   host: String,
-  chunk: [CrossRepoPullRequestRequest],
-  chunkIndex: Int
+  chunk: [CrossRepoPullRequestRequest]
 ) async throws -> CrossRepoChunkOutcome {
   let plan = makeCrossRepoBatchQuery(requests: chunk)
-  // [BPR] remove after manual verification
-  crossRepoBatchLogger.debug(
-    "chunk[\(chunkIndex)] dispatch repos=\(plan.repoAliases.count) host=\(host)"
-  )
   let output = try await runGh(
     shell: shell,
     resolver: resolver,
@@ -503,8 +491,6 @@ nonisolated private func fetchCrossRepoChunk(
   var failed: [RepoKey: GithubCLIError] = [:]
   for (alias, key) in plan.repoAliases {
     if failedAliases.contains(alias) {
-      // [BPR] remove after manual verification
-      crossRepoBatchLogger.debug("chunk[\(chunkIndex)] partial-error alias=\(alias) repo=\(key.owner)/\(key.repo)")
       failed[key] = .commandFailed("Partial GraphQL error for \(key.owner)/\(key.repo)")
       continue
     }
@@ -521,10 +507,6 @@ nonisolated private func fetchCrossRepoChunk(
     )
     success[key] = prs
   }
-  // [BPR] remove after manual verification
-  crossRepoBatchLogger.debug(
-    "chunk[\(chunkIndex)] done success=\(success.count) failed=\(failed.count)"
-  )
   return CrossRepoChunkOutcome(successByRepo: success, failedRepos: failed)
 }
 

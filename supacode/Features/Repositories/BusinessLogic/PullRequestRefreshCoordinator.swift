@@ -39,8 +39,6 @@ final class PullRequestRefreshCoordinator {
   private var inflightHosts: Set<String> = []
   private var queuedByHost: [String: [Repository.ID: Request]] = [:]
 
-  private let logger = SupaLogger("BPR")
-
   init(
     githubCLI: GithubCLIClient,
     clock: any Clock<Duration>,
@@ -76,15 +74,11 @@ final class PullRequestRefreshCoordinator {
     )
 
     if inflightHosts.contains(normalized.host) {
-      // [BPR] remove after manual verification
-      logger.debug("queue host=\(normalized.host) repo=\(normalized.owner)/\(normalized.repo) (inflight)")
       mergeRequest(normalized, into: &queuedByHost)
       return
     }
 
     mergeRequest(normalized, into: &pendingByHost)
-    // [BPR] remove after manual verification
-    logger.debug("enqueue host=\(normalized.host) repo=\(normalized.owner)/\(normalized.repo)")
     rescheduleDebounce(forHost: normalized.host)
   }
 
@@ -155,14 +149,10 @@ final class PullRequestRefreshCoordinator {
     }
     inflightHosts.insert(host)
     let requests = Array(bucket.values)
-    // [BPR] remove after manual verification
-    logger.debug("flush host=\(host) repos=\(requests.count)")
     await processBatch(host: host, requests: requests)
     inflightHosts.remove(host)
     if let queued = queuedByHost.removeValue(forKey: host), !queued.isEmpty {
       pendingByHost[host, default: [:]].merge(queued) { _, new in new }
-      // [BPR] remove after manual verification
-      logger.debug("drain-queued host=\(host) repos=\(queued.count)")
       await flush(host: host)
     }
   }
@@ -191,13 +181,9 @@ final class PullRequestRefreshCoordinator {
       }
       let failedRequests = result.failedRepos.keys.compactMap { requestsByKey[$0] }
       if !failedRequests.isEmpty {
-        // [BPR] remove after manual verification
-        logger.debug("fallback partial host=\(host) count=\(failedRequests.count)")
         await fanOutFallback(failedRequests)
       }
     } catch {
-      // [BPR] remove after manual verification
-      logger.debug("fallback batch host=\(host) error=\(String(describing: error))")
       await fanOutFallback(requests)
     }
   }

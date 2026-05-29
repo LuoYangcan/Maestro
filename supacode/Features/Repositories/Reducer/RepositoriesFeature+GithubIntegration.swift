@@ -4,7 +4,6 @@ import Foundation
 
 private let unresolvedGithubRepositoryMessage =
   "Prowl could not determine which GitHub repository owns this pull request. Check the repository remote and try again."
-nonisolated private let githubIntegrationLogger = SupaLogger("BPR")
 
 extension RepositoriesFeature {
   static func resolveGithubRemoteInfo(
@@ -647,10 +646,6 @@ extension RepositoriesFeature {
   ) -> Effect<Action> {
     switch outcome {
     case .refreshed(let repositoryID, _, let worktreeIDs, let prsByBranch):
-      // [BPR] remove after manual verification
-      githubIntegrationLogger.debug(
-        "BPR outcome refreshed repo=\(repositoryID) worktrees=\(worktreeIDs.count) branches=\(prsByBranch.count)"
-      )
       guard let repository = state.repositories[id: repositoryID] else {
         state.inFlightPullRequestRefreshRepositoryIDs.remove(repositoryID)
         return .none
@@ -672,9 +667,7 @@ extension RepositoriesFeature {
         ),
         .send(.githubIntegration(.repositoryPullRequestRefreshCompleted(repositoryID)))
       )
-    case .failed(let repositoryID, _, let message):
-      // [BPR] remove after manual verification
-      githubIntegrationLogger.debug("BPR outcome failed repo=\(repositoryID) message=\(message)")
+    case .failed(let repositoryID, _, _):
       return .send(.githubIntegration(.repositoryPullRequestRefreshCompleted(repositoryID)))
     }
   }
@@ -690,10 +683,6 @@ extension RepositoriesFeature {
     let coordinatorClient = pullRequestRefreshCoordinator
     let githubCLI = self.githubCLI
     let gitClient = self.gitClient
-    // [BPR] remove after manual verification
-    githubIntegrationLogger.debug(
-      "BPR enqueue repo=\(repositoryID) branches=\(branches.count) cached=\(cachedRemoteInfo != nil)"
-    )
     return .run { send in
       let resolvedRemoteInfo: GithubRemoteInfo?
       if let cachedRemoteInfo {
@@ -712,10 +701,6 @@ extension RepositoriesFeature {
         resolvedRemoteInfo = info
       }
       guard let info = resolvedRemoteInfo else {
-        // [BPR] remove after manual verification
-        githubIntegrationLogger.debug(
-          "BPR enqueue abort repo=\(repositoryID) reason=remoteInfo-unresolved"
-        )
         await send(.githubIntegration(.repositoryPullRequestRefreshCompleted(repositoryID)))
         return
       }
