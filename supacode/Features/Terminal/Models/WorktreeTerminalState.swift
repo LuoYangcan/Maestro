@@ -659,6 +659,10 @@ final class WorktreeTerminalState {
     workingDirectoryOverride: URL? = nil,
     context: ghostty_surface_context_e = GHOSTTY_SURFACE_CONTEXT_TAB
   ) -> SplitTree<GhosttySurfaceView> {
+    guard tabManager.tabs.contains(where: { $0.id == tabId }) else {
+      terminalLifecycleLogger.info("skip splitTree for stale tabID=\(tabId)")
+      return SplitTree()
+    }
     if let existing = trees[tabId] {
       return existing
     }
