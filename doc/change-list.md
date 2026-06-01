@@ -18,7 +18,7 @@ Future upstream checks should only inspect commits **after** this baseline.
 - Created `onevcat/ghostty` fork branch `release/v1.3.1-patched` from upstream tag `v1.3.1`.
 - Added fork-only embedded C API `ghostty_surface_pid(ghostty_surface_t)` for per-pane agent process detection.
 - Prowl submodule now tracks the patched fork branch. Upgrade procedure is documented in
-  `doc-onevcat/fork-sync-ghostty.md`.
+  `doc/fork-sync-ghostty.md`.
 
 ---
 

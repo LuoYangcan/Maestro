@@ -1,4 +1,4 @@
-This fork is primarily for onevcat-specific customizations; before doing any release work, read `doc-onevcat/fork-sync-and-release.md` (and `doc-onevcat/change-list.md`) for fork publishing guidance.
+This fork is primarily for onevcat-specific customizations; before doing any release work, read `doc/fork-sync-and-release.md` (and `doc/change-list.md`) for fork publishing guidance.
 
 ## Build Commands
 

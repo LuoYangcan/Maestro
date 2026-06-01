@@ -59,7 +59,7 @@ If conflicts happen, resolve once, commit, and `rerere` will likely auto-apply n
 ## Ghostty Submodule Sync
 
 Prowl carries a small Ghostty fork patch for embedded APIs. Before changing or upgrading `ThirdParty/ghostty`, read
-`doc-onevcat/fork-sync-ghostty.md`.
+`doc/fork-sync-ghostty.md`.
 
 The submodule should point at `onevcat/ghostty` patched branches named `release/v<UPSTREAM_TAG>-patched`. After moving
 the submodule pointer, run:
@@ -75,10 +75,10 @@ make build-app
 
 ```bash
 # Run the release script (defaults to today's date as version)
-./doc-onevcat/scripts/release.sh
+./doc/scripts/release.sh
 
 # Or specify version explicitly
-./doc-onevcat/scripts/release.sh 2026.3.18
+./doc/scripts/release.sh 2026.3.18
 ```
 
 Or use the `/release` command.
@@ -169,14 +169,14 @@ sentry-cli debug-files upload --include-sources <path-to-dSYM>
 To skip the entire Sentry block (e.g. emergency release, sentry-cli not installed):
 
 ```bash
-SKIP_SENTRY=1 ./doc-onevcat/scripts/release.sh
+SKIP_SENTRY=1 ./doc/scripts/release.sh
 ```
 
 ## Helper Scripts
 
-- `doc-onevcat/scripts/sync-upstream-main.sh` — upstream sync automation
-- `doc-onevcat/scripts/release.sh` — full public release pipeline
-- `doc-onevcat/scripts/release-to-fork.sh` — (deprecated) legacy personal release script
+- `doc/scripts/sync-upstream-main.sh` — upstream sync automation
+- `doc/scripts/release.sh` — full public release pipeline
+- `doc/scripts/release-to-fork.sh` — (deprecated) legacy personal release script
 
 ## Common Pitfalls
 

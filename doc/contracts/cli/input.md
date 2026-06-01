@@ -11,7 +11,7 @@ This file defines **input-side** rules for the phase-1 CLI commands:
 - `key`
 - `read`
 
-It complements output contracts under `doc-onevcat/contracts/cli/{open,list,focus,send,key,read}.md`.
+It complements output contracts under `doc/contracts/cli/{open,list,focus,send,key,read}.md`.
 
 ---
 

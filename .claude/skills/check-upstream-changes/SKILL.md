@@ -9,7 +9,7 @@ Check upstream (supabitapp/supacode) for new changes since the last reviewed bas
 
 Follow these steps:
 
-1. Read `doc-onevcat/change-list.md` and extract the **Upstream Baseline** commit hash and date.
+1. Read `doc/change-list.md` and extract the **Upstream Baseline** commit hash and date.
 2. Fetch the upstream remote:
    ```bash
    git fetch upstream main --quiet
@@ -23,7 +23,7 @@ Follow these steps:
    - Commit hash (short)
    - PR number if visible in the commit message
    - Brief description of the change
-   - Whether it might conflict with or overlap existing fork customizations (check `doc-onevcat/change-list.md` Old Log for context)
+   - Whether it might conflict with or overlap existing fork customizations (check `doc/change-list.md` Old Log for context)
 5. Categorize commits into:
    - **Needs attention** — changes that may conflict with fork patches or require manual review
    - **Safe to merge** — additive features, docs, version bumps, or fixes with no fork overlap

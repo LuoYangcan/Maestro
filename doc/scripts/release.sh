@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Prowl release script: bump, build, sign, notarize, and publish.
 #
-# Usage: ./doc-onevcat/scripts/release.sh [VERSION]
+# Usage: ./doc/scripts/release.sh [VERSION]
 #
 # Prerequisites:
-#   Run ./doc-onevcat/scripts/release-notes.sh first to generate and review
+#   Run ./doc/scripts/release-notes.sh first to generate and review
 #   build/release-notes.md. This script will refuse to proceed without it.
 #
 # Environment variables:

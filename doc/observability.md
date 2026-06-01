@@ -176,7 +176,7 @@ Disabled via `captureApplicationLifecycleEvents = false` + `captureScreenViews =
 | Memory probe (`phys_footprint`) | `supacode/Support/MemoryProbe.swift` |
 | Memory watchdog (baseline + thresholds) | `supacode/Support/MemoryWatchdog.swift` |
 | System hang filter | `supacode/Support/SentryEventFilter.swift` |
-| Release pipeline (dSYM upload + release tracking) | `doc-onevcat/scripts/release.sh` |
+| Release pipeline (dSYM upload + release tracking) | `doc/scripts/release.sh` |
 | Credentials template | `Config/Secrets.env.template` |
 
 ## Quick reference: making changes

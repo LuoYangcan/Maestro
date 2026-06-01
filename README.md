@@ -135,8 +135,8 @@ make sync-ghostty          # Force rebuild + clear DerivedData
 Day-to-day releases are driven by the `release` [Claude Code](https://claude.com/product/claude-code) skill defined in [`.claude/skills/release/SKILL.md`](.claude/skills/release/SKILL.md). It wraps two scripts you can also run directly:
 
 ```bash
-./doc-onevcat/scripts/release-notes.sh <VERSION>   # Generate user-facing notes → build/release-notes.md
-./doc-onevcat/scripts/release.sh <VERSION>         # Bump, build, sign, notarize, DMG, appcast, GitHub Release, Prowl-Site update
+./doc/scripts/release-notes.sh <VERSION>   # Generate user-facing notes → build/release-notes.md
+./doc/scripts/release.sh <VERSION>         # Bump, build, sign, notarize, DMG, appcast, GitHub Release, Prowl-Site update
 ```
 
 The skill walks the flow interactively: verify branch & tree state, confirm the version, review the generated notes, then run `release.sh`. All fork releases are notarized.
