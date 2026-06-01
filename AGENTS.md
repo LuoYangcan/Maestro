@@ -1,4 +1,4 @@
-This fork is primarily for onevcat-specific customizations; before doing any release work, read `doc/fork-sync-and-release.md` (and `doc/change-list.md`) for fork publishing guidance.
+This is my personal fork based on `onevcat/Prowl` (itself a fork of `supabitapp/supacode`), carrying my own customizations on top; before doing any release work, read `doc/fork-sync-and-release.md` (and `doc/change-list.md`) for fork publishing guidance.
 
 ## Build Commands
 
@@ -122,7 +122,7 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 - Automatically commit your changes and your changes only. Do not use `git add .`
 - Before you go on your task, check the current git branch name, if it's something generic like an animal name, name it accordingly. Do not do this for main branch
 - After implementing an execplan, always submit a PR if you're not in the main branch
-- PRs must target `onevcat/Prowl` (this fork), never the upstream `supabitapp/supacode`, unless explicitly requested.
+- All development stays in my own fork. PRs must target `LuoYangcan/Prowl` (the `origin` remote), never the upstream `onevcat/Prowl` or `supabitapp/supacode`, unless explicitly requested.
 - Fork releases must be notarized. Never publish non-notarized releases (`ENABLE_NOTARIZATION=0` is forbidden).
 
 ## Submodules
