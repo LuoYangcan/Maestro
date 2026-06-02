@@ -73,6 +73,7 @@ final class WorktreeTerminalState {
   private var agentDetectionTasks: [UUID: Task<Void, Never>] = [:]
   private var agentDetectionPresenceBySurface: [UUID: AgentDetectionPresence] = [:]
   private var lastClaudeWorkingAtBySurface: [UUID: Date] = [:]
+  private var lastEmittedWorkingDirectoryBySurface: [UUID: URL] = [:]
   private var lastAgentDetectionDiagnosticsBySurface: [UUID: String] = [:]
   private var agentDetectionEnabled = true
   var tabIsRunningById: [TerminalTabID: Bool] = [:]
@@ -1802,9 +1803,27 @@ final class WorktreeTerminalState {
         )
       )
     }
-    guard next != previous else { return }
+    let currentDirectory = inheritedSurfaceConfig(
+      fromSurfaceId: surfaceID,
+      context: GHOSTTY_SURFACE_CONTEXT_TAB
+    ).workingDirectory
+    guard
+      shouldReemitAgentEntry(
+        previousState: previous,
+        nextState: next,
+        lastEmittedDirectory: lastEmittedWorkingDirectoryBySurface[surfaceID],
+        currentDirectory: currentDirectory
+      )
+    else {
+      return
+    }
     surfaceAgentStates[surfaceID] = next
-    emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: next)
+    if let currentDirectory {
+      lastEmittedWorkingDirectoryBySurface[surfaceID] = currentDirectory
+    } else {
+      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+    }
+    emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: next, workingDirectory: currentDirectory)
   }
 
   private func markAgentSeen(surfaceID: UUID) {
@@ -1813,36 +1832,56 @@ final class WorktreeTerminalState {
     state.lastChangedAt = Date()
     surfaceAgentStates[surfaceID] = state
     guard let tabId = tabId(containing: surfaceID) else { return }
-    emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: state)
+    let currentDirectory = inheritedSurfaceConfig(
+      fromSurfaceId: surfaceID,
+      context: GHOSTTY_SURFACE_CONTEXT_TAB
+    ).workingDirectory
+    if let currentDirectory {
+      lastEmittedWorkingDirectoryBySurface[surfaceID] = currentDirectory
+    } else {
+      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+    }
+    emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: state, workingDirectory: currentDirectory)
   }
 
   private func removeAgentEntryIfNeeded(surfaceID: UUID) {
     guard surfaceAgentStates[surfaceID]?.detectedAgent != nil else { return }
     surfaceAgentStates[surfaceID] = PaneAgentState(lastChangedAt: Date())
     lastClaudeWorkingAtBySurface.removeValue(forKey: surfaceID)
+    lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
     onAgentEntryRemoved?(surfaceID)
   }
 
-  private func emitAgentEntry(surfaceID: UUID, tabId: TerminalTabID, state: PaneAgentState) {
-    guard let entry = activeAgentEntry(surfaceID: surfaceID, tabId: tabId, state: state) else {
+  private func emitAgentEntry(
+    surfaceID: UUID,
+    tabId: TerminalTabID,
+    state: PaneAgentState,
+    workingDirectory: URL?
+  ) {
+    guard
+      let entry = activeAgentEntry(
+        surfaceID: surfaceID,
+        tabId: tabId,
+        state: state,
+        workingDirectory: workingDirectory
+      )
+    else {
       onAgentEntryRemoved?(surfaceID)
       return
     }
     onAgentEntryChanged?(entry)
   }
 
-  private func activeAgentEntry(surfaceID: UUID, tabId: TerminalTabID, state: PaneAgentState) -> ActiveAgentEntry? {
+  private func activeAgentEntry(
+    surfaceID: UUID,
+    tabId: TerminalTabID,
+    state: PaneAgentState,
+    workingDirectory: URL?
+  ) -> ActiveAgentEntry? {
     guard let agent = state.detectedAgent, state.state != .unknown else { return nil }
     let paneIDs = trees[tabId]?.leaves().map(\.id) ?? []
     let paneIndex = paneIDs.firstIndex(of: surfaceID).map { $0 + 1 } ?? 1
     let tabTitle = tabManager.tabs.first(where: { $0.id == tabId })?.displayTitle ?? "?"
-    // Resolve the displayed repository/branch from where the agent actually runs, not the tab's
-    // owning worktree: a user may `cd` into a different repo before launching the agent. Falls
-    // back to the surface's launch directory when the shell hasn't reported a pwd.
-    let workingDirectory = inheritedSurfaceConfig(
-      fromSurfaceId: surfaceID,
-      context: GHOSTTY_SURFACE_CONTEXT_TAB
-    ).workingDirectory
     return ActiveAgentEntry(
       id: surfaceID,
       worktreeID: worktree.id,
@@ -1865,6 +1904,7 @@ final class WorktreeTerminalState {
     surfaceAgentStates.removeValue(forKey: surfaceId)
     agentDetectionPresenceBySurface.removeValue(forKey: surfaceId)
     lastClaudeWorkingAtBySurface.removeValue(forKey: surfaceId)
+    lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceId)
     lastAgentDetectionDiagnosticsBySurface.removeValue(forKey: surfaceId)
     onAgentEntryRemoved?(surfaceId)
   }
@@ -1878,6 +1918,7 @@ final class WorktreeTerminalState {
     surfaceAgentStates.removeAll()
     agentDetectionPresenceBySurface.removeAll()
     lastClaudeWorkingAtBySurface.removeAll()
+    lastEmittedWorkingDirectoryBySurface.removeAll()
     lastAgentDetectionDiagnosticsBySurface.removeAll()
     for id in removedIDs {
       onAgentEntryRemoved?(id)

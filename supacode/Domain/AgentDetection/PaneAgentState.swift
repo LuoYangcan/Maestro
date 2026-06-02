@@ -67,6 +67,15 @@ struct AgentDetectionPresence: Equatable, Sendable {
   }
 }
 
+func shouldReemitAgentEntry(
+  previousState: PaneAgentState,
+  nextState: PaneAgentState,
+  lastEmittedDirectory: URL?,
+  currentDirectory: URL?
+) -> Bool {
+  nextState != previousState || currentDirectory != lastEmittedDirectory
+}
+
 private let claudeWorkingHold: TimeInterval = 1.2
 
 func stabilizeAgentState(
