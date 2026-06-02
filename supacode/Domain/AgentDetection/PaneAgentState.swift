@@ -30,7 +30,7 @@ struct PaneAgentState: Equatable, Sendable {
     case .idle:
       return seen ? .idle : .done
     case .unknown:
-      return .idle
+      return detectedAgent == nil ? .idle : .unknown
     }
   }
 }
@@ -67,32 +67,59 @@ struct AgentDetectionPresence: Equatable, Sendable {
   }
 }
 
-private let claudeWorkingHold: TimeInterval = 1.2
+private let agentWorkingHold: TimeInterval = 1.2
+private let agentUnknownHold: TimeInterval = agentWorkingHold
+
+struct AgentStateStabilizationHistory: Equatable, Sendable {
+  var lastWorkingAt: Date?
+  var lastUnknownAt: Date?
+
+  init(lastWorkingAt: Date? = nil, lastUnknownAt: Date? = nil) {
+    self.lastWorkingAt = lastWorkingAt
+    self.lastUnknownAt = lastUnknownAt
+  }
+}
 
 func stabilizeAgentState(
   agent: DetectedAgent?,
-  previous: AgentRawState,
+  previous: PaneAgentState,
   raw: AgentRawState,
   now: Date,
-  lastClaudeWorkingAt: inout Date?
+  history: inout AgentStateStabilizationHistory
 ) -> AgentRawState {
-  guard agent == .claude else {
-    lastClaudeWorkingAt = nil
+  guard let agent else {
+    history = AgentStateStabilizationHistory()
     return raw
+  }
+  let previousAgent = previous.detectedAgent
+  let isSameAgent = previousAgent == nil || previousAgent == agent
+  let previousForAgent = isSameAgent ? previous.state : AgentRawState.unknown
+  if !isSameAgent {
+    history = AgentStateStabilizationHistory()
   }
 
   switch raw {
   case .working:
-    lastClaudeWorkingAt = now
+    history.lastWorkingAt = now
+    history.lastUnknownAt = nil
     return .working
   case .blocked:
+    history.lastUnknownAt = nil
     return .blocked
-  case .idle where previous == .working:
-    guard let lastClaudeWorkingAt else {
+  case .idle where previousForAgent == .working:
+    history.lastUnknownAt = nil
+    guard let lastWorkingAt = history.lastWorkingAt else {
       return .idle
     }
-    return now.timeIntervalSince(lastClaudeWorkingAt) < claudeWorkingHold ? .working : .idle
-  case .idle, .unknown:
-    return raw
+    return now.timeIntervalSince(lastWorkingAt) < agentWorkingHold ? .working : .idle
+  case .idle:
+    history.lastUnknownAt = nil
+    return .idle
+  case .unknown where previousForAgent == .unknown:
+    return .unknown
+  case .unknown:
+    let firstUnknownAt = history.lastUnknownAt ?? now
+    history.lastUnknownAt = firstUnknownAt
+    return now.timeIntervalSince(firstUnknownAt) < agentUnknownHold ? previousForAgent : .unknown
   }
 }

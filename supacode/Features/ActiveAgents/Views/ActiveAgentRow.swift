@@ -125,6 +125,8 @@ extension AgentDisplayState {
       return "Done"
     case .idle:
       return "Idle"
+    case .unknown:
+      return "Unknown"
     }
   }
 
@@ -138,6 +140,8 @@ extension AgentDisplayState {
       return .blue
     case .idle:
       return .secondary
+    case .unknown:
+      return .gray
     }
   }
 }

@@ -72,7 +72,7 @@ final class WorktreeTerminalState {
   private(set) var surfaceAgentStates: [UUID: PaneAgentState] = [:]
   private var agentDetectionTasks: [UUID: Task<Void, Never>] = [:]
   private var agentDetectionPresenceBySurface: [UUID: AgentDetectionPresence] = [:]
-  private var lastClaudeWorkingAtBySurface: [UUID: Date] = [:]
+  private var agentStateStabilizationHistoryBySurface: [UUID: AgentStateStabilizationHistory] = [:]
   private var lastAgentDetectionDiagnosticsBySurface: [UUID: String] = [:]
   private var agentDetectionEnabled = true
   var tabIsRunningById: [TerminalTabID: Bool] = [:]
@@ -255,7 +255,8 @@ final class WorktreeTerminalState {
 
   func focusedFontSize() -> Float32? {
     guard let surfaceId = currentFocusedSurfaceId() else { return nil }
-    return inheritedSurfaceConfig(fromSurfaceId: surfaceId, context: GHOSTTY_SURFACE_CONTEXT_TAB).fontSize
+    return inheritedSurfaceConfig(fromSurfaceId: surfaceId, context: GHOSTTY_SURFACE_CONTEXT_TAB)
+      .fontSize
   }
 
   func ensureInitialTab(focusing: Bool) {
@@ -971,12 +972,14 @@ final class WorktreeTerminalState {
     var seenTabIDs: Set<TerminalTabID> = []
     for snapshotTab in snapshot.tabs {
       guard let tabUUID = UUID(uuidString: snapshotTab.tabID) else {
-        terminalStateLogger.warning("[LayoutRestore] applySnapshot: invalid tab UUID \(snapshotTab.tabID)")
+        terminalStateLogger.warning(
+          "[LayoutRestore] applySnapshot: invalid tab UUID \(snapshotTab.tabID)")
         return false
       }
       let tabID = TerminalTabID(rawValue: tabUUID)
       guard seenTabIDs.insert(tabID).inserted else {
-        terminalStateLogger.warning("[LayoutRestore] applySnapshot: duplicate tab ID \(snapshotTab.tabID)")
+        terminalStateLogger.warning(
+          "[LayoutRestore] applySnapshot: duplicate tab ID \(snapshotTab.tabID)")
         return false
       }
       validatedTabs.append((tabID: tabID, snapshotTab: snapshotTab))
@@ -985,12 +988,14 @@ final class WorktreeTerminalState {
     let selectedTabID: TerminalTabID?
     if let selectedTabRaw = snapshot.selectedTabID {
       guard let selectedUUID = UUID(uuidString: selectedTabRaw) else {
-        terminalStateLogger.warning("[LayoutRestore] applySnapshot: invalid selectedTab UUID \(selectedTabRaw)")
+        terminalStateLogger.warning(
+          "[LayoutRestore] applySnapshot: invalid selectedTab UUID \(selectedTabRaw)")
         return false
       }
       let candidate = TerminalTabID(rawValue: selectedUUID)
       guard seenTabIDs.contains(candidate) else {
-        terminalStateLogger.warning("[LayoutRestore] applySnapshot: selectedTab not in restored tabs")
+        terminalStateLogger.warning(
+          "[LayoutRestore] applySnapshot: selectedTab not in restored tabs")
         return false
       }
       selectedTabID = candidate
@@ -1000,7 +1005,8 @@ final class WorktreeTerminalState {
 
     // Close existing surfaces BEFORE creating new ones so new surfaces
     // don't get destroyed by closeAllSurfaces().
-    terminalStateLogger.info("[LayoutRestore] applySnapshot: closing existing surfaces before restore")
+    terminalStateLogger.info(
+      "[LayoutRestore] applySnapshot: closing existing surfaces before restore")
     closeAllSurfaces()
 
     // Now create new surfaces into the clean state.
@@ -1013,9 +1019,11 @@ final class WorktreeTerminalState {
         "[LayoutRestore] applySnapshot: restoring tab[\(index)] id=\(entry.snapshotTab.tabID)"
       )
       guard
-        let rootNode = restoreSplitNode(from: entry.snapshotTab.splitRoot, tabID: entry.tabID, isRoot: true)
+        let rootNode = restoreSplitNode(
+          from: entry.snapshotTab.splitRoot, tabID: entry.tabID, isRoot: true)
       else {
-        terminalStateLogger.warning("[LayoutRestore] applySnapshot: restoreSplitNode failed for tab[\(index)]")
+        terminalStateLogger.warning(
+          "[LayoutRestore] applySnapshot: restoreSplitNode failed for tab[\(index)]")
         closeAllSurfaces()
         return false
       }
@@ -1196,7 +1204,8 @@ final class WorktreeTerminalState {
     )
     let view = GhosttySurfaceView(
       runtime: runtime,
-      workingDirectory: workingDirectoryOverride ?? inherited.workingDirectory ?? worktree.workingDirectory,
+      workingDirectory: workingDirectoryOverride ?? inherited.workingDirectory
+        ?? worktree.workingDirectory,
       initialInput: initialInput,
       fontSize: resolvedFontSize,
       context: context,
@@ -1308,7 +1317,9 @@ final class WorktreeTerminalState {
 
     let normalizedURL = URL(fileURLWithPath: normalizedPath).standardizedFileURL
     var isDirectory: ObjCBool = false
-    guard fileManager.fileExists(atPath: normalizedPath, isDirectory: &isDirectory), isDirectory.boolValue else {
+    guard fileManager.fileExists(atPath: normalizedPath, isDirectory: &isDirectory),
+      isDirectory.boolValue
+    else {
       return nil
     }
     guard PathPolicy.contains(normalizedURL, in: worktreeRoot) else {
@@ -1527,7 +1538,8 @@ final class WorktreeTerminalState {
       else {
         return nil
       }
-      let context: ghostty_surface_context_e = isRoot ? GHOSTTY_SURFACE_CONTEXT_TAB : GHOSTTY_SURFACE_CONTEXT_SPLIT
+      let context: ghostty_surface_context_e =
+        isRoot ? GHOSTTY_SURFACE_CONTEXT_TAB : GHOSTTY_SURFACE_CONTEXT_SPLIT
       let restoredWorkingDirectory = Self.resolveSnapshotWorkingDirectory(
         from: snapshotNode.cwdPath,
         worktreeRoot: worktree.workingDirectory
@@ -1701,7 +1713,8 @@ final class WorktreeTerminalState {
         guard let self, let view, self.surfaces[view.id] != nil else { return }
         await self.detectAgentState(for: view, tabId: tabId)
         let hasAgent = self.surfaceAgentStates[view.id]?.detectedAgent != nil
-        try? await Task.sleep(for: hasAgent ? activeAgentDetectionInterval : idleAgentDetectionInterval)
+        try? await Task.sleep(
+          for: hasAgent ? activeAgentDetectionInterval : idleAgentDetectionInterval)
       }
     }
   }
@@ -1710,7 +1723,8 @@ final class WorktreeTerminalState {
     let surfaceID = view.id
     let childPID = view.bridge.childPID()
     let processGroupID = view.bridge.foregroundProcessGroupID()
-    let job = await AgentProcessProbe.shared.foregroundJob(processGroupID: processGroupID, childPID: childPID)
+    let job = await AgentProcessProbe.shared.foregroundJob(
+      processGroupID: processGroupID, childPID: childPID)
     guard surfaces[surfaceID] != nil else { return }
 
     let identified = job.flatMap { identifyAgentInJob($0) }
@@ -1754,15 +1768,15 @@ final class WorktreeTerminalState {
     let raw = agent.detectState(in: activeText)
     guard surfaces[surfaceID] != nil else { return }
 
-    var lastClaudeWorkingAt = lastClaudeWorkingAtBySurface[surfaceID]
+    var stabilizationHistory = agentStateStabilizationHistoryBySurface[surfaceID] ?? AgentStateStabilizationHistory()
     let stabilized = stabilizeAgentState(
       agent: agent,
-      previous: previous.state,
+      previous: previous,
       raw: raw,
       now: now,
-      lastClaudeWorkingAt: &lastClaudeWorkingAt
+      history: &stabilizationHistory
     )
-    lastClaudeWorkingAtBySurface[surfaceID] = lastClaudeWorkingAt
+    agentStateStabilizationHistoryBySurface[surfaceID] = stabilizationHistory
 
     let isForeground = isSelected() && isFocusedSurface(surfaceID)
     let becameIdleFromActive =
@@ -1776,7 +1790,9 @@ final class WorktreeTerminalState {
     } else {
       seen = previous.seen
     }
-    let lastChangedAt = (previous.detectedAgent != agent || previous.state != stabilized) ? now : previous.lastChangedAt
+    let lastChangedAt =
+      (previous.detectedAgent != agent || previous.state != stabilized)
+      ? now : previous.lastChangedAt
     let next = PaneAgentState(
       detectedAgent: agent,
       fallbackState: raw,
@@ -1819,7 +1835,7 @@ final class WorktreeTerminalState {
   private func removeAgentEntryIfNeeded(surfaceID: UUID) {
     guard surfaceAgentStates[surfaceID]?.detectedAgent != nil else { return }
     surfaceAgentStates[surfaceID] = PaneAgentState(lastChangedAt: Date())
-    lastClaudeWorkingAtBySurface.removeValue(forKey: surfaceID)
+    agentStateStabilizationHistoryBySurface.removeValue(forKey: surfaceID)
     onAgentEntryRemoved?(surfaceID)
   }
 
@@ -1831,8 +1847,10 @@ final class WorktreeTerminalState {
     onAgentEntryChanged?(entry)
   }
 
-  private func activeAgentEntry(surfaceID: UUID, tabId: TerminalTabID, state: PaneAgentState) -> ActiveAgentEntry? {
-    guard let agent = state.detectedAgent, state.state != .unknown else { return nil }
+  private func activeAgentEntry(surfaceID: UUID, tabId: TerminalTabID, state: PaneAgentState)
+    -> ActiveAgentEntry?
+  {
+    guard let agent = state.detectedAgent else { return nil }
     let paneIDs = trees[tabId]?.leaves().map(\.id) ?? []
     let paneIndex = paneIDs.firstIndex(of: surfaceID).map { $0 + 1 } ?? 1
     let tabTitle = tabManager.tabs.first(where: { $0.id == tabId })?.displayTitle ?? "?"
@@ -1864,7 +1882,7 @@ final class WorktreeTerminalState {
     agentDetectionTasks.removeValue(forKey: surfaceId)
     surfaceAgentStates.removeValue(forKey: surfaceId)
     agentDetectionPresenceBySurface.removeValue(forKey: surfaceId)
-    lastClaudeWorkingAtBySurface.removeValue(forKey: surfaceId)
+    agentStateStabilizationHistoryBySurface.removeValue(forKey: surfaceId)
     lastAgentDetectionDiagnosticsBySurface.removeValue(forKey: surfaceId)
     onAgentEntryRemoved?(surfaceId)
   }
@@ -1877,7 +1895,7 @@ final class WorktreeTerminalState {
     agentDetectionTasks.removeAll()
     surfaceAgentStates.removeAll()
     agentDetectionPresenceBySurface.removeAll()
-    lastClaudeWorkingAtBySurface.removeAll()
+    agentStateStabilizationHistoryBySurface.removeAll()
     lastAgentDetectionDiagnosticsBySurface.removeAll()
     for id in removedIDs {
       onAgentEntryRemoved?(id)

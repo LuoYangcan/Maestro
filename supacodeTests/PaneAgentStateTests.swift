@@ -18,58 +18,127 @@ struct PaneAgentStateTests {
     #expect(state.displayState == .idle)
   }
 
+  @Test func displayStateDistinguishesIndeterminateAgentFromNoAgent() {
+    #expect(PaneAgentState(state: .unknown).displayState == .idle)
+    #expect(PaneAgentState(detectedAgent: .claude, state: .unknown).displayState == .unknown)
+  }
+
   @Test func claudeWorkingIsStickyForShortIdleGap() {
     let now = Date(timeIntervalSince1970: 100)
-    var lastWorking: Date?
+    var history = AgentStateStabilizationHistory()
 
     let working = stabilizeAgentState(
       agent: .claude,
-      previous: .idle,
+      previous: PaneAgentState(detectedAgent: .claude, state: .idle),
       raw: .working,
       now: now,
-      lastClaudeWorkingAt: &lastWorking
+      history: &history
     )
     #expect(working == .working)
 
     let stillWorking = stabilizeAgentState(
       agent: .claude,
-      previous: .working,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
       raw: .idle,
       now: now.addingTimeInterval(0.4),
-      lastClaudeWorkingAt: &lastWorking
+      history: &history
     )
     #expect(stillWorking == .working)
   }
 
   @Test func claudeTransitionsToIdleAfterStickyWindow() {
     let now = Date(timeIntervalSince1970: 100)
-    var lastWorking: Date? = now
+    var history = AgentStateStabilizationHistory(lastWorkingAt: now)
 
     let idle = stabilizeAgentState(
       agent: .claude,
-      previous: .working,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
       raw: .idle,
       now: now.addingTimeInterval(1.201),
-      lastClaudeWorkingAt: &lastWorking
+      history: &history
     )
 
     #expect(idle == .idle)
   }
 
-  @Test func nonClaudeDoesNotUseStickyWindow() {
+  @Test func codexWorkingIsStickyForShortIdleGap() {
     let now = Date(timeIntervalSince1970: 100)
-    var lastWorking: Date? = now
+    var history = AgentStateStabilizationHistory(lastWorkingAt: now)
 
-    let idle = stabilizeAgentState(
+    let working = stabilizeAgentState(
       agent: .codex,
-      previous: .working,
+      previous: PaneAgentState(detectedAgent: .codex, state: .working),
       raw: .idle,
-      now: now,
-      lastClaudeWorkingAt: &lastWorking
+      now: now.addingTimeInterval(0.4),
+      history: &history
     )
 
-    #expect(idle == .idle)
-    #expect(lastWorking == nil)
+    #expect(working == .working)
+    #expect(history.lastWorkingAt == now)
+  }
+
+  @Test func singleUnknownFrameHoldsPreviousState() {
+    let now = Date(timeIntervalSince1970: 100)
+    var history = AgentStateStabilizationHistory(lastWorkingAt: now)
+
+    let stabilized = stabilizeAgentState(
+      agent: .claude,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
+      raw: .unknown,
+      now: now.addingTimeInterval(0.1),
+      history: &history
+    )
+
+    #expect(stabilized == .working)
+    #expect(history.lastUnknownAt == now.addingTimeInterval(0.1))
+  }
+
+  @Test func sustainedUnknownTransitionsToUnknownAfterHoldWindow() {
+    let now = Date(timeIntervalSince1970: 100)
+    var history = AgentStateStabilizationHistory(lastWorkingAt: now, lastUnknownAt: now)
+
+    let stabilized = stabilizeAgentState(
+      agent: .claude,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
+      raw: .unknown,
+      now: now.addingTimeInterval(1.201),
+      history: &history
+    )
+
+    #expect(stabilized == .unknown)
+  }
+
+  @Test func workingUnknownJitterDoesNotFlipDisplayState() {
+    let now = Date(timeIntervalSince1970: 100)
+    var history = AgentStateStabilizationHistory()
+
+    let working = stabilizeAgentState(
+      agent: .claude,
+      previous: PaneAgentState(detectedAgent: .claude, state: .idle),
+      raw: .working,
+      now: now,
+      history: &history
+    )
+    #expect(working == .working)
+
+    let held = stabilizeAgentState(
+      agent: .claude,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
+      raw: .unknown,
+      now: now.addingTimeInterval(0.3),
+      history: &history
+    )
+    #expect(held == .working)
+
+    let recovered = stabilizeAgentState(
+      agent: .claude,
+      previous: PaneAgentState(detectedAgent: .claude, state: .working),
+      raw: .working,
+      now: now.addingTimeInterval(0.6),
+      history: &history
+    )
+    #expect(recovered == .working)
+    #expect(history.lastUnknownAt == nil)
   }
 
   @Test func presenceRequiresSixMissesBeforeRelease() {

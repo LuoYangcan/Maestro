@@ -5,7 +5,7 @@ import Testing
 
 struct TerminalCloseConfirmationPolicyTests {
   @Test func agentWorkingBlockedAndDoneRequireConfirmation() {
-    let protectedStates: [AgentDisplayState] = [.working, .blocked, .done]
+    let protectedStates: [AgentDisplayState] = [.working, .blocked, .done, .unknown]
 
     for state in protectedStates {
       let decision = TerminalCloseConfirmationPolicy.decision(

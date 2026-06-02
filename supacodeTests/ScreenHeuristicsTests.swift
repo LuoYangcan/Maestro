@@ -10,7 +10,8 @@ struct ScreenHeuristicsTests {
 
   @Test func piDetection() {
     #expect(DetectedAgent.pi.detectState(in: "Working...") == .working)
-    #expect(DetectedAgent.pi.detectState(in: "Done") == .idle)
+    #expect(DetectedAgent.pi.detectState(in: "Pi is ready") == .idle)
+    #expect(DetectedAgent.pi.detectState(in: "Done") == .unknown)
   }
 
   @Test func claudeDetection() {
@@ -35,6 +36,14 @@ struct ScreenHeuristicsTests {
           Esc to cancel · Tab to amend
           """
       ) == .blocked
+    )
+    #expect(
+      DetectedAgent.claude.detectState(
+        in: """
+          Resume this session with: claude --resume abc123
+          user@host Prowl %
+          """
+      ) == .unknown
     )
     #expect(
       DetectedAgent.claude.detectState(
@@ -173,20 +182,24 @@ struct ScreenHeuristicsTests {
 
           ✻ Churned for 8s
           """
-      ) == .idle
+      ) == .unknown
     )
   }
 
   @Test func codexDetection() {
-    #expect(DetectedAgent.codex.detectState(in: "press enter to confirm or esc to cancel") == .blocked)
+    #expect(
+      DetectedAgent.codex.detectState(in: "press enter to confirm or esc to cancel") == .blocked)
     #expect(DetectedAgent.codex.detectState(in: "• Working (12s)\nesc to interrupt") == .working)
     #expect(DetectedAgent.codex.detectState(in: "Ready for input") == .idle)
+    #expect(
+      DetectedAgent.codex.detectState(in: "codex --resume abc123\nuser@host Prowl %") == .unknown)
   }
 
   @Test func geminiDetection() {
     #expect(DetectedAgent.gemini.detectState(in: "│ Apply this change") == .blocked)
     #expect(DetectedAgent.gemini.detectState(in: "esc to cancel") == .working)
-    #expect(DetectedAgent.gemini.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.gemini.detectState(in: "Gemini is ready") == .idle)
+    #expect(DetectedAgent.gemini.detectState(in: "done") == .unknown)
   }
 
   @Test func cursorDetection() {
@@ -221,10 +234,11 @@ struct ScreenHeuristicsTests {
           The docs mention pressing (y) to allow a run.
           This is historical output, not a prompt.
           """
-      ) == .idle
+      ) == .unknown
     )
-    #expect(DetectedAgent.cursor.detectState(in: "Skip (esc or n)") == .idle)
-    #expect(DetectedAgent.cursor.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.cursor.detectState(in: "Cursor is ready") == .idle)
+    #expect(DetectedAgent.cursor.detectState(in: "Skip (esc or n)") == .unknown)
+    #expect(DetectedAgent.cursor.detectState(in: "done") == .unknown)
   }
 
   @Test func clineDetection() {
@@ -270,6 +284,7 @@ struct ScreenHeuristicsTests {
     )
     #expect(DetectedAgent.cline.detectState(in: "Cline is ready for your message") == .idle)
     #expect(DetectedAgent.cline.detectState(in: "Start New Task (1)") == .idle)
+    #expect(DetectedAgent.cline.detectState(in: "Task completed") == .unknown)
   }
 
   @Test func opencodeDetection() {
@@ -283,15 +298,17 @@ struct ScreenHeuristicsTests {
       ) == .blocked
     )
     #expect(DetectedAgent.opencode.detectState(in: "esc to interrupt") == .working)
-    #expect(DetectedAgent.opencode.detectState(in: "Do you want to continue?\nYes") == .idle)
-    #expect(DetectedAgent.opencode.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.opencode.detectState(in: "opencode is ready") == .idle)
+    #expect(DetectedAgent.opencode.detectState(in: "Do you want to continue?\nYes") == .unknown)
+    #expect(DetectedAgent.opencode.detectState(in: "done") == .unknown)
   }
 
   @Test func copilotDetection() {
     #expect(DetectedAgent.copilot.detectState(in: "│ do you want to run this?") == .blocked)
     #expect(DetectedAgent.copilot.detectState(in: "esc to cancel") == .working)
-    #expect(DetectedAgent.copilot.detectState(in: "Do you want to continue?\nYes") == .idle)
-    #expect(DetectedAgent.copilot.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.copilot.detectState(in: "Copilot is ready") == .idle)
+    #expect(DetectedAgent.copilot.detectState(in: "Do you want to continue?\nYes") == .unknown)
+    #expect(DetectedAgent.copilot.detectState(in: "done") == .unknown)
   }
 
   @Test func kimiDetection() {
@@ -343,15 +360,18 @@ struct ScreenHeuristicsTests {
           """
       ) == .blocked
     )
-    #expect(DetectedAgent.kimi.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.kimi.detectState(in: "done") == .unknown)
   }
 
   @Test func droidDetection() {
     #expect(DetectedAgent.droid.detectState(in: "EXECUTE\nenter to select") == .blocked)
-    #expect(DetectedAgent.droid.detectState(in: "> Yes, allow\n> No, cancel\nUse ↑↓ to navigate") == .blocked)
+    #expect(
+      DetectedAgent.droid.detectState(in: "> Yes, allow\n> No, cancel\nUse ↑↓ to navigate")
+        == .blocked)
     #expect(DetectedAgent.droid.detectState(in: "⠋ esc to stop") == .working)
     #expect(DetectedAgent.droid.detectState(in: "esc to stop") == .working)
-    #expect(DetectedAgent.droid.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.droid.detectState(in: "Droid is ready") == .idle)
+    #expect(DetectedAgent.droid.detectState(in: "done") == .unknown)
   }
 
   @Test func ampDetection() {
@@ -364,8 +384,11 @@ struct ScreenHeuristicsTests {
           """
       ) == .blocked
     )
-    #expect(DetectedAgent.amp.detectState(in: "waiting for approval\nallow all for this session") == .idle)
+    #expect(
+      DetectedAgent.amp.detectState(in: "waiting for approval\nallow all for this session")
+        == .unknown)
     #expect(DetectedAgent.amp.detectState(in: "esc to cancel") == .working)
-    #expect(DetectedAgent.amp.detectState(in: "done") == .idle)
+    #expect(DetectedAgent.amp.detectState(in: "Amp is ready") == .idle)
+    #expect(DetectedAgent.amp.detectState(in: "done") == .unknown)
   }
 }

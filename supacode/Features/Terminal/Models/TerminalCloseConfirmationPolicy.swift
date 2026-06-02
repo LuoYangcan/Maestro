@@ -48,7 +48,7 @@ enum TerminalCloseConfirmationPolicy {
   ) -> TerminalCloseProtectionReason? {
     if candidate.hasAgent {
       switch candidate.agentDisplayState {
-      case .working, .blocked, .done:
+      case .working, .blocked, .done, .unknown:
         return .agentActive
       case .idle, .none:
         return nil

@@ -12,4 +12,5 @@ enum AgentDisplayState: String, Equatable, Sendable {
   case blocked
   case done
   case idle
+  case unknown
 }

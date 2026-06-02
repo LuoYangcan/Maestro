@@ -52,7 +52,10 @@ nonisolated private func recentLines(_ content: String, limit: Int) -> String {
 }
 
 nonisolated private func detectPi(_ content: String) -> AgentRawState {
-  content.contains("Working...") ? .working : .idle
+  if content.contains("Working...") {
+    return .working
+  }
+  return hasPiLivePrompt(content: content, lower: content.lowercased()) ? .idle : .unknown
 }
 
 nonisolated private func detectClaude(_ content: String) -> AgentRawState {
@@ -74,7 +77,7 @@ nonisolated private func detectClaude(_ content: String) -> AgentRawState {
   if hasSpinnerActivity(above) {
     return .working
   }
-  return .idle
+  return hasClaudeLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectCodex(_ content: String) -> AgentRawState {
@@ -91,7 +94,7 @@ nonisolated private func detectCodex(_ content: String) -> AgentRawState {
   if hasInterruptPattern(lower) || hasCodexWorkingHeader(content) {
     return .working
   }
-  return .idle
+  return hasCodexLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectGemini(_ content: String) -> AgentRawState {
@@ -107,7 +110,7 @@ nonisolated private func detectGemini(_ content: String) -> AgentRawState {
   if lower.contains("esc to cancel") {
     return .working
   }
-  return .idle
+  return hasGeminiLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectCursor(_ content: String) -> AgentRawState {
@@ -118,10 +121,12 @@ nonisolated private func detectCursor(_ content: String) -> AgentRawState {
   {
     return .blocked
   }
-  if lower.contains("trusting workspace") || lower.contains("ctrl+c to stop") || hasCursorSpinner(content) {
+  if lower.contains("trusting workspace") || lower.contains("ctrl+c to stop")
+    || hasCursorSpinner(content)
+  {
     return .working
   }
-  return .idle
+  return hasCursorLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectCline(_ content: String) -> AgentRawState {
@@ -135,19 +140,20 @@ nonisolated private func detectCline(_ content: String) -> AgentRawState {
   if hasInterruptPattern(lower) {
     return .working
   }
-  return .idle
+  return hasClineLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectOpenCode(_ content: String) -> AgentRawState {
+  let lower = content.lowercased()
   if content.contains("△ Permission required")
     || hasOpenCodeQuestionPrompt(content)
   {
     return .blocked
   }
-  if hasInterruptPattern(content.lowercased()) {
+  if hasInterruptPattern(lower) {
     return .working
   }
-  return .idle
+  return hasOpenCodeLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectCopilot(_ content: String) -> AgentRawState {
@@ -160,7 +166,7 @@ nonisolated private func detectCopilot(_ content: String) -> AgentRawState {
   if lower.contains("esc to cancel") {
     return .working
   }
-  return .idle
+  return hasCopilotLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectKimi(_ content: String) -> AgentRawState {
@@ -176,7 +182,8 @@ nonisolated private func detectKimi(_ content: String) -> AgentRawState {
   }
 
   let workingPatterns = [
-    "thinking", "processing", "generating", "waiting for response", "ctrl+c to cancel", "ctrl-c to cancel",
+    "thinking", "processing", "generating", "waiting for response", "ctrl+c to cancel",
+    "ctrl-c to cancel",
   ]
   if workingPatterns.contains(where: lower.contains)
     || hasKimiMoonSpinner(content)
@@ -184,7 +191,7 @@ nonisolated private func detectKimi(_ content: String) -> AgentRawState {
   {
     return .working
   }
-  return .idle
+  return hasKimiLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectDroid(_ content: String) -> AgentRawState {
@@ -207,7 +214,7 @@ nonisolated private func detectDroid(_ content: String) -> AgentRawState {
   if hasDroidSpinner(content) || lower.contains("esc to stop") {
     return .working
   }
-  return .idle
+  return hasDroidLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func detectAmp(_ content: String) -> AgentRawState {
@@ -232,7 +239,7 @@ nonisolated private func detectAmp(_ content: String) -> AgentRawState {
   if lower.contains("esc to cancel") {
     return .working
   }
-  return .idle
+  return hasAmpLivePrompt(content: content, lower: lower) ? .idle : .unknown
 }
 
 nonisolated private func contentAbovePromptBox(_ content: String) -> String {
@@ -317,7 +324,8 @@ nonisolated private func hasCursorPermissionPrompt(content: String, lower: Strin
     || lower.contains("allow execution")
   guard hasPermissionHeader else { return false }
 
-  let hasConfirmAction = content.split(separator: "\n", omittingEmptySubsequences: false).contains { line in
+  let hasConfirmAction = content.split(separator: "\n", omittingEmptySubsequences: false).contains {
+    line in
     let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
     guard trimmed.contains("(y)") else { return false }
     return trimmed.contains("run") || trimmed.contains("allow")
@@ -341,7 +349,8 @@ nonisolated private func hasClineNumberedChoicePrompt(_ content: String) -> Bool
 
 nonisolated private func hasKimiApprovalPanel(content: String, lower: String) -> Bool {
   lower.contains("requesting approval")
-    || (lower.contains("approve once") && lower.contains("approve for this session") && lower.contains("reject"))
+    || (lower.contains("approve once") && lower.contains("approve for this session")
+      && lower.contains("reject"))
     || (content.contains("─ approval") && content.contains("↵ confirm"))
 }
 
@@ -424,4 +433,89 @@ nonisolated private func hasOpenCodeQuestionPrompt(_ content: String) -> Bool {
     || content.contains("⇆ tab")
 
   return lower.contains("esc dismiss") && hasEnterAction && hasQuestionNavigation
+}
+
+nonisolated private func hasPiLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("pi is ready")
+}
+
+nonisolated private func hasClaudeLivePrompt(content: String, lower: String) -> Bool {
+  content.contains("⌕ Search…")
+    || lower.contains("ctrl+r to toggle")
+    || lower.contains("bypass permissions on")
+    || hasClaudePromptBox(content)
+}
+
+nonisolated private func hasClaudePromptBox(_ content: String) -> Bool {
+  let lines = content.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+  guard let promptIndex = lines.lastIndex(where: { $0.contains("❯") }) else { return false }
+  let hasBorderBefore = lines[..<promptIndex].contains(where: isBoxBorderLine)
+  let hasBorderAfter = lines[lines.index(after: promptIndex)...].contains(where: isBoxBorderLine)
+  return hasBorderBefore && hasBorderAfter
+}
+
+nonisolated private func hasCodexLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("ready for input")
+}
+
+nonisolated private func hasGeminiLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("gemini is ready")
+}
+
+nonisolated private func hasCursorLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("cursor is ready")
+    || lower.contains("agent is ready")
+}
+
+nonisolated private func hasClineLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("cline is ready for your message")
+    || lower.contains("start new task")
+}
+
+nonisolated private func hasOpenCodeLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("opencode is ready")
+}
+
+nonisolated private func hasCopilotLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("copilot is ready")
+}
+
+nonisolated private func hasKimiLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("── input")
+}
+
+nonisolated private func hasDroidLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("droid is ready")
+}
+
+nonisolated private func hasAmpLivePrompt(content: String, lower: String) -> Bool {
+  hasCommonAgentLivePrompt(content: content, lower: lower)
+    || lower.contains("amp is ready")
+}
+
+nonisolated private func hasCommonAgentLivePrompt(content: String, lower: String) -> Bool {
+  lower.contains("ready for input")
+    || lower.contains("type your message")
+    || lower.contains("enter to send")
+    || lower.contains("/ for commands")
+    || lower.contains("@ for files")
+    || hasInputSectionHeader(content)
+}
+
+nonisolated private func hasInputSectionHeader(_ content: String) -> Bool {
+  content.split(separator: "\n", omittingEmptySubsequences: false).contains { line in
+    let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
+    return trimmed.hasPrefix("── input")
+      || trimmed.hasPrefix("━━ input")
+      || trimmed.hasPrefix("╭─ input")
+  }
 }
