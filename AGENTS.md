@@ -13,7 +13,7 @@ make format                      # Run full-tree swift-format cleanup
 make lint                        # Run swiftlint only
 make check                       # Run changed-file format, swift-format lint, and swiftlint
 make test                        # Run all tests
-make log-stream                  # Stream app logs (subsystem: com.onevcat.prowl)
+make log-stream                  # Stream app logs (subsystem: com.yangcanluo.maestro)
 make build-cli                   # Build CLI (prowl) via SwiftPM
 make test-cli-smoke              # Run CLI smoke tests (unit-level)
 make test-cli-integration        # Run CLI integration tests (socket round-trip)

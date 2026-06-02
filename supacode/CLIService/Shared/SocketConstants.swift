@@ -17,7 +17,7 @@ public enum ProwlSocket {
 
   /// Default Unix domain socket path.
   ///
-  /// Located under `~/Library/Application Support/com.onevcat.prowl/` because macOS periodically
+  /// Located under `~/Library/Application Support/com.yangcanluo.maestro/` because macOS periodically
   /// sweeps `/var/folders/.../T/` (NSTemporaryDirectory) and removes the socket file out from
   /// under a long-running app, leaving a bound FD with no path entry — connect() then fails with
   /// ENOENT and the CLI mistakenly reports `APP_NOT_RUNNING`.
@@ -31,7 +31,7 @@ public enum ProwlSocket {
     let preferred = FileManager.default.homeDirectoryForCurrentUser
       .appending(path: "Library", directoryHint: .isDirectory)
       .appending(path: "Application Support", directoryHint: .isDirectory)
-      .appending(path: "com.onevcat.prowl", directoryHint: .isDirectory)
+      .appending(path: "com.yangcanluo.maestro", directoryHint: .isDirectory)
       .appending(path: "cli.sock", directoryHint: .notDirectory)
       .path(percentEncoded: false)
     // sockaddr_un.sun_path is 104 bytes on Darwin (including NUL terminator).

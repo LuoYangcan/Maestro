@@ -112,7 +112,7 @@ make format-changed        # Format changed Swift files only
 make format                # Full-tree Swift format cleanup
 make lint                  # SwiftLint only
 make test                  # Run app/unit tests
-make log-stream            # Stream app logs (subsystem: com.onevcat.prowl)
+make log-stream            # Stream app logs (subsystem: com.yangcanluo.maestro)
 ```
 
 ### CLI

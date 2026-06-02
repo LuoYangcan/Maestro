@@ -79,10 +79,10 @@ jobs:
                 app \"Prowl.app\"
 
                 zap trash: [
-                  \"~/Library/Application Support/com.onevcat.prowl\",
-                  \"~/Library/Caches/com.onevcat.prowl\",
-                  \"~/Library/Preferences/com.onevcat.prowl.plist\",
-                  \"~/Library/Saved Application State/com.onevcat.prowl.savedState\",
+                  \"~/Library/Application Support/com.yangcanluo.maestro\",
+                  \"~/Library/Caches/com.yangcanluo.maestro\",
+                  \"~/Library/Preferences/com.yangcanluo.maestro.plist\",
+                  \"~/Library/Saved Application State/com.yangcanluo.maestro.savedState\",
                 ]
               end
               """

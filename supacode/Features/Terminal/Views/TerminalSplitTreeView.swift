@@ -12,7 +12,7 @@ struct TerminalSplitTreeView: View {
   let hasNotification: (UUID) -> Bool
   let action: (Operation) -> Void
 
-  private static let dragType = UTType(exportedAs: "com.onevcat.prowl.ghosttySurfaceId")
+  private static let dragType = UTType(exportedAs: "com.yangcanluo.maestro.ghosttySurfaceId")
   private static func dragProvider(for surfaceView: GhosttySurfaceView) -> NSItemProvider {
     let provider = NSItemProvider()
     let data = surfaceView.id.uuidString.data(using: .utf8) ?? Data()

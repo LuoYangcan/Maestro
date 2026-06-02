@@ -22,7 +22,7 @@ nonisolated struct SupaLogger: Sendable {
 
   init(_ category: String) {
     self.category = category
-    let subsystem = Bundle.main.bundleIdentifier ?? "com.onevcat.prowl"
+    let subsystem = Bundle.main.bundleIdentifier ?? "com.yangcanluo.maestro"
     #if !DEBUG
       self.logger = Logger(subsystem: subsystem, category: category)
     #endif

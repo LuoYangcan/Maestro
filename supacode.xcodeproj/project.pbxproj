@@ -495,7 +495,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -Wno-incomplete-umbrella";
-				PRODUCT_BUNDLE_IDENTIFIER = com.onevcat.prowl;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangcanluo.maestro;
 				PRODUCT_MODULE_NAME = supacode;
 				PRODUCT_NAME = Prowl;
 				REGISTER_APP_GROUPS = YES;
@@ -553,7 +553,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -Wno-incomplete-umbrella";
-				PRODUCT_BUNDLE_IDENTIFIER = com.onevcat.prowl;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangcanluo.maestro;
 				PRODUCT_MODULE_NAME = supacode;
 				PRODUCT_NAME = Prowl;
 				REGISTER_APP_GROUPS = YES;
@@ -583,7 +583,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 2026.5.30;
-				PRODUCT_BUNDLE_IDENTIFIER = com.onevcat.prowlTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangcanluo.maestroTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -605,7 +605,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 2026.5.30;
-				PRODUCT_BUNDLE_IDENTIFIER = com.onevcat.prowlTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangcanluo.maestroTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
