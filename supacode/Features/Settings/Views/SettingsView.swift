@@ -38,8 +38,6 @@ struct SettingsView: View {
             .tag(SettingsSection.shortcuts)
           Label("Worktree", systemImage: "archivebox")
             .tag(SettingsSection.worktree)
-          Label("Updates", systemImage: "arrow.down.circle")
-            .tag(SettingsSection.updates)
           Label("Advanced", systemImage: "gearshape.2")
             .tag(SettingsSection.advanced)
           Label("GitHub", systemImage: "arrow.triangle.branch")

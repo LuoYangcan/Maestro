@@ -43,7 +43,7 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
     defaultEditorID: OpenWorktreeAction.automaticSettingsID,
     confirmBeforeQuit: true,
     updateChannel: .stable,
-    updatesAutomaticallyCheckForUpdates: true,
+    updatesAutomaticallyCheckForUpdates: false,
     updatesAutomaticallyDownloadUpdates: false,
     inAppNotificationsEnabled: true,
     notificationSoundEnabled: true,
