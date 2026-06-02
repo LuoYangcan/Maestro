@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ActiveAgentRow: View {
   let entry: ActiveAgentEntry
-  let repositoryName: String
+  let titleName: String
   let branchName: String
   let repositoryColor: RepositoryColorChoice?
   let isDimmed: Bool
@@ -36,7 +36,7 @@ struct ActiveAgentRow: View {
       Text("·")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.tertiary)
-      Text(repositoryName)
+      Text(titleName)
         .font(.callout.weight(.medium))
         .foregroundStyle(repositoryColor?.color ?? .secondary)
     }
