@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generate release notes for the next Prowl version.
 #
-# Usage: ./doc-onevcat/scripts/release-notes.sh [VERSION]
+# Usage: ./doc/scripts/release-notes.sh [VERSION]
 #
 # Compares HEAD against the previous release tag, gathers commits and PR
 # descriptions, and uses an LLM (claude CLI) to produce user-facing release
@@ -247,4 +247,4 @@ if ! lint_release_notes "$NOTES_FILE"; then
 fi
 
 log "review and edit the file if needed, then run:"
-log "  ./doc-onevcat/scripts/release.sh $VERSION"
+log "  ./doc/scripts/release.sh $VERSION"

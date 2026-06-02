@@ -1,6 +1,6 @@
 // supacode/CLIService/OpenCommandHandler.swift
 // Handles `prowl open [path]` — resolves path to worktree, selects it, brings app to front.
-// Response payload follows doc-onevcat/contracts/cli/open.md contract.
+// Response payload follows doc/contracts/cli/open.md contract.
 
 import AppKit
 import Foundation
@@ -32,7 +32,7 @@ struct OpenResolverResult: Sendable {
 
 // MARK: - Contract-aligned payload
 
-/// Success payload per doc-onevcat/contracts/cli/open.md
+/// Success payload per doc/contracts/cli/open.md
 struct OpenCommandData: Codable {
   let invocation: String
   let requestedPath: String?

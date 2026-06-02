@@ -11,7 +11,7 @@ This plan defines where CLI logic lives, how requests are transported to a runni
 - Make `prowl` a stable machine interface for a running Prowl instance.
 - Keep parsing and validation outside app runtime logic.
 - Reuse existing repository/terminal capabilities instead of rebuilding terminal core.
-- Align runtime behavior with contract docs under `doc-onevcat/contracts/cli/`.
+- Align runtime behavior with contract docs under `doc/contracts/cli/`.
 
 ---
 
