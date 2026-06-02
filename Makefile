@@ -333,7 +333,7 @@ lint: # Lint code with swiftlint
 check: format-changed format-lint lint # Format changed Swift files, then run swift-format lint and SwiftLint
 
 log-stream: # Stream logs from the app via log stream
-	log stream --predicate 'subsystem == "com.onevcat.prowl"' --style compact --color always
+	log stream --predicate 'subsystem == "com.yangcanluo.maestro"' --style compact --color always
 
 bump-version: # Bump app version (usage: make bump-version [VERSION=YYYY.M.DD] [BUILD=YYYYMMDD])
 	@if [ -z "$(VERSION)" ]; then \

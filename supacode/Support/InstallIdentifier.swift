@@ -3,7 +3,7 @@ import Foundation
 /// A per-install UUID persisted in UserDefaults. Regenerates after reset or
 /// on a fresh install — does not leak a stable hardware identifier.
 nonisolated enum InstallIdentifier {
-  private static let userDefaultsKey = "com.onevcat.prowl.installIdentifier"
+  private static let userDefaultsKey = "com.yangcanluo.maestro.installIdentifier"
 
   static var current: String {
     let defaults = UserDefaults.standard

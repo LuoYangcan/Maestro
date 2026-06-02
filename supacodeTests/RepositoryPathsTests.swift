@@ -114,7 +114,7 @@ struct SupacodePathsTests {
   @Test func repositorySnapshotURLUsesAppSupportCacheDirectory() {
     let path = SupacodePaths.repositorySnapshotURL.path(percentEncoded: false)
 
-    #expect(path.contains("/Library/Application Support/com.onevcat.prowl/cache/"))
+    #expect(path.contains("/Library/Application Support/com.yangcanluo.maestro/cache/"))
   }
 
   @Test func migrateLegacyCacheMovesSnapshotFilesToCacheDirectory() throws {

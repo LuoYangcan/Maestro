@@ -15,7 +15,7 @@ final class CLISocketServer {
   private let socketPath: String
   private var serverFD: Int32 = -1
   private var isRunning = false
-  private let acceptQueue = DispatchQueue(label: "com.onevcat.prowl.cli-accept", qos: .userInitiated)
+  private let acceptQueue = DispatchQueue(label: "com.yangcanluo.maestro.cli-accept", qos: .userInitiated)
 
   init(router: CLICommandRouter, socketPath: String = ProwlSocket.defaultPath) {
     self.router = router
@@ -24,7 +24,7 @@ final class CLISocketServer {
 
   /// Start listening for CLI connections.
   func start() throws {
-    // Ensure parent directory exists (e.g. ~/Library/Application Support/com.onevcat.prowl)
+    // Ensure parent directory exists (e.g. ~/Library/Application Support/com.yangcanluo.maestro)
     let parentDir = (socketPath as NSString).deletingLastPathComponent
     try? FileManager.default.createDirectory(
       atPath: parentDir,

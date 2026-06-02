@@ -24,7 +24,7 @@ nonisolated enum SupacodePaths {
       ?? baseDirectory
     return
       appSupport
-      .appending(path: "com.onevcat.prowl", directoryHint: .isDirectory)
+      .appending(path: "com.yangcanluo.maestro", directoryHint: .isDirectory)
       .standardizedFileURL
   }
 
