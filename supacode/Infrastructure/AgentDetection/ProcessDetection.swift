@@ -42,6 +42,10 @@ actor AgentProcessProbe {
     return cachedForegroundJob(processGroupID: resolvedProcessGroupID, now: Date())
   }
 
+  func processCurrentDirectory(pid: pid_t) -> String? {
+    ProcessDetection.processCurrentDirectory(pid: pid)
+  }
+
   private func cachedForegroundJob(processGroupID: pid_t, now: Date) -> ForegroundJob? {
     if let cached = jobsByProcessGroupID[processGroupID],
       now.timeIntervalSince(cached.capturedAt) < cacheLifetime
@@ -154,10 +158,28 @@ nonisolated enum ProcessDetection {
     return result == Int32(size) ? info : nil
   }
 
+  static func processCurrentDirectory(pid: pid_t) -> String? {
+    guard pid > 0 else { return nil }
+    var info = proc_vnodepathinfo()
+    let size = MemoryLayout<proc_vnodepathinfo>.size
+    let result = withUnsafeMutablePointer(to: &info) { pointer in
+      proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, pointer, Int32(size))
+    }
+    guard result == Int32(size) else { return nil }
+    let bytes = withUnsafeBytes(of: info.pvi_cdir.vip_path) { rawBuffer -> [UInt8] in
+      Array(rawBuffer)
+    }
+    return nullTerminatedUTF8String(from: bytes)
+  }
+
   static func comm(from info: proc_bsdinfo) -> String? {
     let bytes = withUnsafeBytes(of: info.pbi_comm) { rawBuffer -> [UInt8] in
       Array(rawBuffer)
     }
+    return nullTerminatedUTF8String(from: bytes)
+  }
+
+  private static func nullTerminatedUTF8String(from bytes: [UInt8]) -> String? {
     let end = bytes.firstIndex(of: 0) ?? bytes.count
     guard end > 0 else { return nil }
     return String(bytes: bytes[..<end], encoding: .utf8)

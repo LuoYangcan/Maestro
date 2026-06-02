@@ -47,7 +47,7 @@ private struct AgentDetectionDiagnostic {
   let childPID: pid_t?
   let processGroupID: pid_t?
   let job: ForegroundJob?
-  let identified: (agent: DetectedAgent, name: String)?
+  let identified: IdentifiedAgentProcess?
   let retainedAgent: DetectedAgent?
   let raw: AgentRawState?
   let stabilized: AgentRawState?
@@ -1803,10 +1803,13 @@ final class WorktreeTerminalState {
         )
       )
     }
-    let currentDirectory = inheritedSurfaceConfig(
-      fromSurfaceId: surfaceID,
-      context: GHOSTTY_SURFACE_CONTEXT_TAB
-    ).workingDirectory
+    let processDirectoryPath = await processCurrentDirectoryPath(for: identified)
+    guard surfaces[surfaceID] != nil else { return }
+
+    let currentDirectory = activeAgentWorkingDirectory(
+      surfaceID: surfaceID,
+      processDirectoryPath: processDirectoryPath
+    )
     guard
       shouldReemitAgentEntry(
         previousState: previous,
@@ -1818,11 +1821,7 @@ final class WorktreeTerminalState {
       return
     }
     surfaceAgentStates[surfaceID] = next
-    if let currentDirectory {
-      lastEmittedWorkingDirectoryBySurface[surfaceID] = currentDirectory
-    } else {
-      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
-    }
+    recordEmittedWorkingDirectory(surfaceID: surfaceID, currentDirectory: currentDirectory)
     emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: next, workingDirectory: currentDirectory)
   }
 
@@ -1832,15 +1831,8 @@ final class WorktreeTerminalState {
     state.lastChangedAt = Date()
     surfaceAgentStates[surfaceID] = state
     guard let tabId = tabId(containing: surfaceID) else { return }
-    let currentDirectory = inheritedSurfaceConfig(
-      fromSurfaceId: surfaceID,
-      context: GHOSTTY_SURFACE_CONTEXT_TAB
-    ).workingDirectory
-    if let currentDirectory {
-      lastEmittedWorkingDirectoryBySurface[surfaceID] = currentDirectory
-    } else {
-      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
-    }
+    let currentDirectory = activeAgentWorkingDirectory(surfaceID: surfaceID, processDirectoryPath: nil)
+    recordEmittedWorkingDirectory(surfaceID: surfaceID, currentDirectory: currentDirectory)
     emitAgentEntry(surfaceID: surfaceID, tabId: tabId, state: state, workingDirectory: currentDirectory)
   }
 
@@ -1896,6 +1888,44 @@ final class WorktreeTerminalState {
       displayState: state.displayState,
       lastChangedAt: state.lastChangedAt
     )
+  }
+
+  private func activeAgentWorkingDirectory(surfaceID: UUID, processDirectoryPath: String?) -> URL? {
+    if let processDirectoryPath,
+      let processDirectory = standardizedDirectoryURL(path: processDirectoryPath)
+    {
+      return processDirectory
+    }
+    return standardizedDirectoryURL(
+      inheritedSurfaceConfig(
+        fromSurfaceId: surfaceID,
+        context: GHOSTTY_SURFACE_CONTEXT_TAB
+      ).workingDirectory
+    )
+      ?? worktree.workingDirectory.standardizedFileURL
+  }
+
+  private func processCurrentDirectoryPath(for identified: IdentifiedAgentProcess?) async -> String? {
+    guard let pid = identified?.pid else { return nil }
+    return await AgentProcessProbe.shared.processCurrentDirectory(pid: pid)
+  }
+
+  private func recordEmittedWorkingDirectory(surfaceID: UUID, currentDirectory: URL?) {
+    if let currentDirectory {
+      lastEmittedWorkingDirectoryBySurface[surfaceID] = currentDirectory
+    } else {
+      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+    }
+  }
+
+  private func standardizedDirectoryURL(path: String) -> URL? {
+    let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return nil }
+    return URL(fileURLWithPath: trimmed, isDirectory: true).standardizedFileURL
+  }
+
+  private func standardizedDirectoryURL(_ url: URL?) -> URL? {
+    url?.standardizedFileURL
   }
 
   private func cleanupAgentDetectionState(forSurfaceId surfaceId: UUID) {
