@@ -751,18 +751,8 @@ struct SupacodeApp: App {
           }
         }
       #endif
-      CommandGroup(replacing: .help) {
-        Button("Homepage", systemImage: "house") {
-          if let url = URL(string: "https://prowl.onev.cat/") {
-            NSWorkspace.shared.open(url)
-          }
-        }
-        Button("Release Notes", systemImage: "note.text") {
-          if let url = URL(string: "https://prowl.onev.cat/releases/") {
-            NSWorkspace.shared.open(url)
-          }
-        }
-      }
+      // Distribution-channel links (Homepage / Release Notes) hidden until this fork has its own.
+      CommandGroup(replacing: .help) {}
       CommandGroup(replacing: .appTermination) {
         Button("Quit Prowl") {
           store.send(.requestQuit)

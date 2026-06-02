@@ -4,37 +4,10 @@ import SwiftUI
 struct SidebarFooterView: View {
   let store: StoreOf<RepositoriesFeature>
   @Environment(\.surfaceBottomChromeBackgroundOpacity) private var surfaceBottomChromeBackgroundOpacity
-  @Environment(\.openURL) private var openURL
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
 
   var body: some View {
     HStack {
-      Menu {
-        Button("Homepage", systemImage: "house") {
-          if let url = URL(string: "https://prowl.onev.cat/") {
-            openURL(url)
-          }
-        }
-        .help("Open Prowl homepage")
-        Button("Release Notes", systemImage: "note.text") {
-          if let url = URL(string: "https://prowl.onev.cat/releases/") {
-            openURL(url)
-          }
-        }
-        .help("View release notes")
-        Divider()
-        Button("Submit GitHub Issue", systemImage: "exclamationmark.bubble") {
-          if let url = URL(string: "https://github.com/onevcat/supacode/issues/new") {
-            openURL(url)
-          }
-        }
-        .help("Submit GitHub issue")
-      } label: {
-        Label("Help", systemImage: "questionmark.circle")
-          .labelStyle(.iconOnly)
-      }
-      .menuIndicator(.hidden)
-      .help("Help")
       Spacer()
       Button {
         withAnimation(.easeOut(duration: 0.18)) {
