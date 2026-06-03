@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ActiveAgentsPanel: View {
   @Bindable var store: StoreOf<ActiveAgentsFeature>
-  /// Per-entry repository/branch labels resolved from each agent's working directory by the parent
+  /// Per-entry title/branch labels resolved from each agent's working directory by the parent
   /// (see `SidebarListView.activeAgentRowDisplays`); keeps this view presentational.
   let rowDisplays: [ActiveAgentEntry.ID: ActiveAgentRowDisplay]
   let selectedSurfaceID: UUID?
@@ -53,7 +53,7 @@ struct ActiveAgentsPanel: View {
               } label: {
                 ActiveAgentRow(
                   entry: entry,
-                  repositoryName: repositoryName(for: entry),
+                  titleName: titleName(for: entry),
                   branchName: branchName(for: entry),
                   repositoryColor: repositoryColor(for: entry),
                   isDimmed: isDimmed(entry)
@@ -120,8 +120,8 @@ struct ActiveAgentsPanel: View {
     min(maximumHeight, max(ActiveAgentsFeature.minimumPanelHeight, height))
   }
 
-  private func repositoryName(for entry: ActiveAgentEntry) -> String {
-    rowDisplays[entry.id]?.repositoryName ?? entry.worktreeName
+  private func titleName(for entry: ActiveAgentEntry) -> String {
+    rowDisplays[entry.id]?.titleName ?? entry.worktreeName
   }
 
   private func branchName(for entry: ActiveAgentEntry) -> String {

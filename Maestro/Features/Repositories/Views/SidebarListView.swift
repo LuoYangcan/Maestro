@@ -502,6 +502,7 @@ struct SidebarListView: View {
     repositoryAppearances: [Repository.ID: RepositoryAppearance] = [:]
   ) -> ActiveAgentWorktreeMetadata {
     var repositoryNamesByWorktreeID: [Worktree.ID: String] = [:]
+    var worktreeDirectoryNamesByWorktreeID: [Worktree.ID: String] = [:]
     var branchNamesByWorktreeID: [Worktree.ID: String] = [:]
     var repositoryColorsByWorktreeID: [Worktree.ID: RepositoryColorChoice] = [:]
 
@@ -510,6 +511,7 @@ struct SidebarListView: View {
       let repositoryColor = repositoryAppearances[repository.id]?.color
       if repository.capabilities.supportsRunnableFolderActions && !repository.capabilities.supportsWorktrees {
         repositoryNamesByWorktreeID[repository.id] = repositoryName
+        worktreeDirectoryNamesByWorktreeID[repository.id] = repository.rootURL.lastPathComponent
         branchNamesByWorktreeID[repository.id] = repository.name
         if let repositoryColor {
           repositoryColorsByWorktreeID[repository.id] = repositoryColor
@@ -517,6 +519,7 @@ struct SidebarListView: View {
       }
       for worktree in repository.worktrees {
         repositoryNamesByWorktreeID[worktree.id] = repositoryName
+        worktreeDirectoryNamesByWorktreeID[worktree.id] = worktree.workingDirectory.lastPathComponent
         branchNamesByWorktreeID[worktree.id] = worktree.name
         if let repositoryColor {
           repositoryColorsByWorktreeID[worktree.id] = repositoryColor
@@ -526,6 +529,7 @@ struct SidebarListView: View {
 
     return ActiveAgentWorktreeMetadata(
       repositoryNamesByWorktreeID: repositoryNamesByWorktreeID,
+      worktreeDirectoryNamesByWorktreeID: worktreeDirectoryNamesByWorktreeID,
       branchNamesByWorktreeID: branchNamesByWorktreeID,
       repositoryColorsByWorktreeID: repositoryColorsByWorktreeID
     )
@@ -564,16 +568,16 @@ struct SidebarListView: View {
       if let key = resolveWorktreeID(forWorkingDirectory: workingDirectory, in: repositories) {
         let fallbackName = workingDirectory.lastPathComponent
         return ActiveAgentRowDisplay(
-          repositoryName: metadata.repositoryNamesByWorktreeID[key] ?? fallbackName,
+          titleName: metadata.worktreeDirectoryNamesByWorktreeID[key] ?? fallbackName,
           branchName: metadata.branchNamesByWorktreeID[key] ?? fallbackName,
           color: metadata.repositoryColorsByWorktreeID[key]
         )
       }
       let name = Repository.name(for: workingDirectory)
-      return ActiveAgentRowDisplay(repositoryName: name, branchName: name, color: nil)
+      return ActiveAgentRowDisplay(titleName: name, branchName: name, color: nil)
     }
     return ActiveAgentRowDisplay(
-      repositoryName: metadata.repositoryNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
+      titleName: metadata.worktreeDirectoryNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
       branchName: metadata.branchNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
       color: metadata.repositoryColorsByWorktreeID[entry.worktreeID]
     )
@@ -608,12 +612,13 @@ struct SidebarListView: View {
 
 struct ActiveAgentWorktreeMetadata: Equatable {
   let repositoryNamesByWorktreeID: [Worktree.ID: String]
+  let worktreeDirectoryNamesByWorktreeID: [Worktree.ID: String]
   let branchNamesByWorktreeID: [Worktree.ID: String]
   let repositoryColorsByWorktreeID: [Worktree.ID: RepositoryColorChoice]
 }
 
 struct ActiveAgentRowDisplay: Equatable {
-  let repositoryName: String
+  let titleName: String
   let branchName: String
   let color: RepositoryColorChoice?
 }

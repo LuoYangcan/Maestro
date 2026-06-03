@@ -44,6 +44,7 @@ struct AgentClassifierTests {
     let result = try #require(identifyAgentInJob(job))
     #expect(result.agent == .cursor)
     #expect(result.name == "agent")
+    #expect(result.pid == 100)
   }
 
   @Test func ignoresGenericAgentProcessWithoutCursorContext() {
@@ -79,6 +80,7 @@ struct AgentClassifierTests {
     let result = try #require(identifyAgentInJob(job))
     #expect(result.agent == .cursor)
     #expect(result.name == "cursor-agent")
+    #expect(result.pid == 100)
   }
 
   @Test func ignoresPlainShellsAndUnknownProcesses() {
@@ -104,6 +106,7 @@ struct AgentClassifierTests {
     let result = try #require(identifyAgentInJob(job))
     #expect(result.agent == .codex)
     #expect(result.name == "codex")
+    #expect(result.pid == 100)
   }
 
   @Test func identifiesOmxAsCodexWrapper() throws {
@@ -122,6 +125,7 @@ struct AgentClassifierTests {
     let result = try #require(identifyAgentInJob(job))
     #expect(result.agent == .codex)
     #expect(result.name == "omx")
+    #expect(result.pid == 100)
   }
 
   @Test func prefersDirectAgentProcessOverWrapper() throws {
@@ -136,5 +140,6 @@ struct AgentClassifierTests {
     let result = try #require(identifyAgentInJob(job))
     #expect(result.agent == .claude)
     #expect(result.name == "claude")
+    #expect(result.pid == 101)
   }
 }
