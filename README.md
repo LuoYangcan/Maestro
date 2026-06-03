@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://prowl.onev.cat/images/prowl-icon-rounded.png" width="128" alt="Prowl">
+  <img src="https://maestro.onev.cat/images/maestro-icon-rounded.png" width="128" alt="Maestro">
 </p>
 
-<h1 align="center">Prowl</h1>
+<h1 align="center">Maestro</h1>
 
 <p align="center">
   <b>Your terminal wasn't built for agents. Until now.</b><br>
@@ -10,30 +10,30 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/onevcat/Prowl/releases/latest/download/Prowl.dmg"><b>Download</b></a>
+  <a href="https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg"><b>Download</b></a>
   ·
   <a href="https://www.youtube.com/watch?v=4GYlXPttwi0">Watch Demo</a>
   ·
-  <a href="https://prowl.onev.cat">Website</a>
+  <a href="https://maestro.onev.cat">Website</a>
   ·
-  <code>brew install --cask onevcat/tap/prowl</code>
+  <code>brew install --cask onevcat/tap/maestro</code>
 </p>
 
 <p align="center">
-  <img src="https://prowl.onev.cat/images/promotion.webp" alt="Prowl — vertical tabs, terminals, command palette, and split view">
+  <img src="https://maestro.onev.cat/images/promotion.webp" alt="Maestro — vertical tabs, terminals, command palette, and split view">
 </p>
 
 ---
 
-## Why Prowl?
+## Why Maestro?
 
-You're not just typing commands anymore — you're orchestrating Claude Code, Codex, and friends across repos, branches, and ideas. Prowl is the terminal built for that.
+You're not just typing commands anymore — you're orchestrating Claude Code, Codex, and friends across repos, branches, and ideas. Maestro is the terminal built for that.
 
 ## Highlights
 
 ### 🖼 Canvas — every agent, at a glance
 
-<img align="right" width="360" src="https://prowl.onev.cat/images/feature-canvas.webp" alt="Canvas view of multiple live agent terminals">
+<img align="right" width="360" src="https://maestro.onev.cat/images/feature-canvas.webp" alt="Canvas view of multiple live agent terminals">
 
 Three agents running, one just finished — _where_? Canvas gives you a bird's-eye view where every card is a **live, interactive terminal**, not a screenshot. Finished tasks light up the moment they complete, and you can broadcast a single command to every agent at once.
 
@@ -41,7 +41,7 @@ Three agents running, one just finished — _where_? Canvas gives you a bird's-e
 
 ### 📚 Shelf — your worktrees, lined up like books on a shelf
 
-<img align="left" width="360" src="https://prowl.onev.cat/images/shelf-view.webp" alt="Shelf view with vertical worktree spines and tabs">
+<img align="left" width="360" src="https://maestro.onev.cat/images/shelf-view.webp" alt="Shelf view with vertical worktree spines and tabs">
 
 Every worktree becomes a vertical **spine** stacked on the side, with its tabs nested underneath. Flip through your stack from the keyboard — **`⌘⌃←` / `⌘⌃→` cycles books · `⌘⌃↑` / `⌘⌃↓` cycles tabs** — so when you've got six agents in flight, you triage them one keystroke at a time, never losing your place.
 
@@ -49,7 +49,7 @@ Every worktree becomes a vertical **spine** stacked on the side, with its tabs n
 
 ### ⚡ Custom Actions — one keystroke, any workflow
 
-<img align="right" width="360" src="https://prowl.onev.cat/images/feature-custom-actions.png" alt="Custom Actions with per-repo buttons and shortcuts">
+<img align="right" width="360" src="https://maestro.onev.cat/images/feature-custom-actions.png" alt="Custom Actions with per-repo buttons and shortcuts">
 
 Pin `swift build`, `npm test`, or `claude -p "review this diff"` to a button and bind it to `⌘B`. Set it up once per repo and stop typing the same thing every day. Pair with `claude -p` / `codex exec` to turn your terminal into a daily AI-powered assistant.
 
@@ -57,13 +57,13 @@ Pin `swift build`, `npm test`, or `claude -p "review this diff"` to a button and
 
 ### 🤖 CLI — let your agents drive the terminal
 
-Your agent needs to run a test, read the output, and decide what's next. Prowl ships with a `prowl` CLI so both you and your agents can control the terminal programmatically:
+Your agent needs to run a test, read the output, and decide what's next. Maestro ships with a `maestro` CLI so both you and your agents can control the terminal programmatically:
 
 ```bash
-prowl list                         # discover panes & their status
-prowl send "npm test" --capture    # execute & capture output in one shot
-prowl read                         # read screen content on demand
-prowl key <keystroke>              # send keystrokes programmatically
+maestro list                         # discover panes & their status
+maestro send "npm test" --capture    # execute & capture output in one shot
+maestro read                         # read screen content on demand
+maestro key <keystroke>              # send keystrokes programmatically
 ```
 
 ### And the stuff you'd expect, done right
@@ -76,12 +76,12 @@ prowl key <keystroke>              # send keystrokes programmatically
 
 ## Install
 
-**Download:** [Prowl.dmg](https://github.com/onevcat/Prowl/releases/latest/download/Prowl.dmg) (notarized)
+**Download:** [Maestro.dmg](https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg) (notarized)
 
 **Homebrew:**
 
 ```bash
-brew install --cask onevcat/tap/prowl
+brew install --cask onevcat/tap/maestro
 ```
 
 ## Requirements
@@ -118,7 +118,7 @@ make log-stream            # Stream app logs (subsystem: com.yangcanluo.maestro)
 ### CLI
 
 ```bash
-make build-cli             # Build `prowl` CLI via SwiftPM
+make build-cli             # Build `maestro` CLI via SwiftPM
 make test-cli-smoke        # Quick CLI smoke checks
 make test-cli-integration  # End-to-end CLI socket integration tests
 ```
@@ -136,7 +136,7 @@ Day-to-day releases are driven by the `release` [Claude Code](https://claude.com
 
 ```bash
 ./doc/scripts/release-notes.sh <VERSION>   # Generate user-facing notes → build/release-notes.md
-./doc/scripts/release.sh <VERSION>         # Bump, build, sign, notarize, DMG, appcast, GitHub Release, Prowl-Site update
+./doc/scripts/release.sh <VERSION>         # Bump, build, sign, notarize, DMG, appcast, GitHub Release, Maestro-Site update
 ```
 
 The skill walks the flow interactively: verify branch & tree state, confirm the version, review the generated notes, then run `release.sh`. All fork releases are notarized.

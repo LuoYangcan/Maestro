@@ -2,13 +2,13 @@
 
 Status: implementation plan for `#70` after contract alignment.
 
-This plan defines where CLI logic lives, how requests are transported to a running app, and how command execution is routed inside Prowl.
+This plan defines where CLI logic lives, how requests are transported to a running app, and how command execution is routed inside Maestro.
 
 ---
 
 ## 1) Goals
 
-- Make `prowl` a stable machine interface for a running Prowl instance.
+- Make `maestro` a stable machine interface for a running Maestro instance.
 - Keep parsing and validation outside app runtime logic.
 - Reuse existing repository/terminal capabilities instead of rebuilding terminal core.
 - Align runtime behavior with contract docs under `doc/contracts/cli/`.
@@ -19,9 +19,9 @@ This plan defines where CLI logic lives, how requests are transported to a runni
 
 ## Decision A: first-class CLI binary
 
-`prowl` MUST be implemented as a first-class Swift executable (ArgumentParser-based), not shell-script business logic.
+`maestro` MUST be implemented as a first-class Swift executable (ArgumentParser-based), not shell-script business logic.
 
-- Existing `bin/prowl` shell implementation is discarded.
+- Existing `bin/maestro` shell implementation is discarded.
 - Parsing truth and input validation must live in Swift CLI module.
 
 Why:
@@ -54,7 +54,7 @@ Phase-1 commands are **remote-control actions on running app state**.
 
 ## 3.1 CLI side
 
-`ProwlCLI` target:
+`MaestroCLI` target:
 
 - `CommandParser`
   - ArgumentParser commands and options
@@ -162,7 +162,7 @@ Implementation MUST be validated against `schema.md` for `--json` mode.
 
 ## M1 — parser/runtime split
 
-- Introduce Swift `prowl` executable target.
+- Introduce Swift `maestro` executable target.
 - Discard shell implementation and keep command parsing in Swift only.
 
 ## M2 — command service scaffold

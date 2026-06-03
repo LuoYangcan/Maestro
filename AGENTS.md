@@ -14,7 +14,7 @@ make lint                        # Run swiftlint only
 make check                       # Run changed-file format, swift-format lint, and swiftlint
 make test                        # Run all tests
 make log-stream                  # Stream app logs (subsystem: com.yangcanluo.maestro)
-make build-cli                   # Build CLI (prowl) via SwiftPM
+make build-cli                   # Build CLI (maestro) via SwiftPM
 make test-cli-smoke              # Run CLI smoke tests (unit-level)
 make test-cli-integration        # Run CLI integration tests (socket round-trip)
 make bump-version                # Bump version (date-based YYYY.M.DD) and create git tag
@@ -23,8 +23,8 @@ make bump-and-release            # Bump version and push to trigger release
 
 Run a single test class or method:
 ```bash
-xcodebuild test -project supacode.xcodeproj -scheme supacode -destination "platform=macOS" \
-  -only-testing:supacodeTests/TerminalTabManagerTests \
+xcodebuild test -project Maestro.xcodeproj -scheme Maestro -destination "platform=macOS" \
+  -only-testing:MaestroTests/TerminalTabManagerTests \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" -skipMacroValidation
 ```
 
@@ -32,7 +32,7 @@ Requires [mise](https://mise.jdx.dev/) for zig, swiftlint, and xcsift tooling.
 
 ## Architecture
 
-Prowl is a macOS orchestrator for running multiple coding agents in parallel, using GhosttyKit as the underlying terminal.
+Maestro is a macOS orchestrator for running multiple coding agents in parallel, using GhosttyKit as the underlying terminal.
 
 ### Core Data Flow
 
@@ -66,7 +66,7 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 
 - **Commands**: `createTab`, `closeFocusedTab`, `prune`, `setSelectedWorktreeID`, etc.
 - **Events**: `notificationReceived`, `tabCreated`, `tabClosed`, `focusChanged`, `taskStatusChanged`
-- Wired in `supacodeApp.swift`, subscribed in `AppFeature.task`
+- Wired in `MaestroApp.swift`, subscribed in `AppFeature.task`
 
 ### Key Dependencies
 
@@ -74,8 +74,6 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 - **GhosttyKit**: Terminal emulator (built from Zig source in ThirdParty/ghostty)
 - **Sparkle**: Auto-update framework
 - **swift-dependencies**: Dependency injection for TCA clients
-- **PostHog**: Analytics
-- **Sentry**: Error tracking
 
 ## Ghostty Keybindings Handling
 
@@ -117,15 +115,15 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 ## Rules
 
 - After a task, ensure the app builds: `make build-app`
-- When working on CLI code (`ProwlCLI/`, `ProwlCLITests/`, `Package.swift`), run `make build-cli`, `make test-cli-smoke`, and `make test-cli-integration` before committing.
+- When working on CLI code (`MaestroCLI/`, `MaestroCLITests/`, `Package.swift`), run `make build-cli`, `make test-cli-smoke`, and `make test-cli-integration` before committing.
 - When implementing a new feature or fixing a bug that is unrelated to the current branch's active work, first create a dedicated branch from the latest `origin/main`; then work, commit, push, and open a PR from that branch.
 - Automatically commit your changes and your changes only. Do not use `git add .`
 - Before you go on your task, check the current git branch name, if it's something generic like an animal name, name it accordingly. Do not do this for main branch
 - After implementing an execplan, always submit a PR if you're not in the main branch
-- All development stays in my own fork. PRs must target `LuoYangcan/Prowl` (the `origin` remote), never the upstream `onevcat/Prowl` or `supabitapp/supacode`, unless explicitly requested.
+- All development stays in my own fork. PRs must target `LuoYangcan/Maestro` (the `origin` remote), never the upstream `onevcat/Prowl` or `supabitapp/supacode`, unless explicitly requested.
 - Fork releases must be notarized. Never publish non-notarized releases (`ENABLE_NOTARIZATION=0` is forbidden).
 
 ## Submodules
 
 - `ThirdParty/ghostty` (`https://github.com/ghostty-org/ghostty`): Source dependency used to build `Frameworks/GhosttyKit.xcframework` and terminal resources.
-- `Resources/git-wt` (`https://github.com/khoi/git-wt.git`): Bundled `wt` CLI used by Prowl Git worktree flows at runtime.
+- `Resources/git-wt` (`https://github.com/khoi/git-wt.git`): Bundled `wt` CLI used by Maestro Git worktree flows at runtime.

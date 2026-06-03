@@ -1,4 +1,4 @@
-# CLI Input Contract: `prowl` (v1)
+# CLI Input Contract: `maestro` (v1)
 
 Status: draft truth source for `#70` implementation.
 
@@ -29,7 +29,7 @@ It complements output contracts under `doc/contracts/cli/{open,list,focus,send,k
 ### 2.1 Canonical form
 
 ```bash
-prowl <subcommand> [target-selector] [command-args] [output-options]
+maestro <subcommand> [target-selector] [command-args] [output-options]
 ```
 
 ### 2.2 Supported subcommands (v1)
@@ -50,9 +50,9 @@ Global options (not subcommands):
 
 These are equivalent to `open` entry:
 
-- `prowl`
-- `prowl <path-like-first-arg>`
-- `prowl open <path>`
+- `maestro`
+- `maestro <path-like-first-arg>`
+- `maestro open <path>`
 
 Path-like first arg (v1):
 
@@ -68,8 +68,8 @@ Path-like first arg (v1):
 
 `--` stops option parsing and forces following token parsing as positional arguments.
 
-- `prowl -- ./focus` MUST be treated as path entry (`open`), not subcommand `focus`.
-- `prowl open -- --weird-dir` MUST treat `--weird-dir` as path.
+- `maestro -- ./focus` MUST be treated as path entry (`open`), not subcommand `focus`.
+- `maestro open -- --weird-dir` MUST treat `--weird-dir` as path.
 
 ---
 
@@ -87,16 +87,16 @@ Path-like first arg (v1):
 `focus` and `read` accept an optional positional argument as auto-target:
 
 ```bash
-prowl focus <target>
-prowl read <target> --last 50
+maestro focus <target>
+maestro read <target> --last 50
 ```
 
 `send` and `key` use argument count to disambiguate:
 
-- `prowl send "text"` — 1 arg → text to current pane.
-- `prowl send <target> "text"` — 2 args → auto-target + text.
-- `prowl key enter` — 1 arg → key token to current pane.
-- `prowl key <target> enter` — 2 args → auto-target + key token.
+- `maestro send "text"` — 1 arg → text to current pane.
+- `maestro send <target> "text"` — 2 args → auto-target + text.
+- `maestro key enter` — 1 arg → key token to current pane.
+- `maestro key <target> enter` — 2 args → auto-target + key token.
 
 Positional targets are ignored when flag selectors (`-t`, `--worktree`, `--tab`, `--pane`) are present.
 
@@ -150,17 +150,17 @@ All phase-1 commands MUST support `--json`.
 ### Grammar
 
 ```bash
-prowl
-prowl <path-like>
-prowl open <path>
+maestro
+maestro <path-like>
+maestro open <path>
 ```
 
 ### Rules
 
-- `prowl` without path is valid and means “open app / bring to front”.
-- `prowl <path-like>` is first-class, not shorthand hack.
-- `prowl open <path>` is explicit equivalent for scripts.
-- For all open-entry forms, if app is not running, CLI MUST launch Prowl and complete the open/focus flow.
+- `maestro` without path is valid and means “open app / bring to front”.
+- `maestro <path-like>` is first-class, not shorthand hack.
+- `maestro open <path>` is explicit equivalent for scripts.
+- For all open-entry forms, if app is not running, CLI MUST launch Maestro and complete the open/focus flow.
 - Path MUST be normalized by CLI:
   - expand `~`
   - resolve relative path to absolute path
@@ -173,7 +173,7 @@ prowl open <path>
 ### Grammar
 
 ```bash
-prowl list [--json]
+maestro list [--json]
 ```
 
 ### Rules
@@ -186,8 +186,8 @@ prowl list [--json]
 ### Grammar
 
 ```bash
-prowl focus [<target>] [--json]
-prowl focus [-t <...> | --worktree <...> | --tab <...> | --pane <...>] [--json]
+maestro focus [<target>] [--json]
+maestro focus [-t <...> | --worktree <...> | --tab <...> | --pane <...>] [--json]
 ```
 
 ### Rules
@@ -202,10 +202,10 @@ prowl focus [-t <...> | --worktree <...> | --tab <...> | --pane <...>] [--json]
 ### Grammar
 
 ```bash
-prowl send [flags] <text>
-prowl send [flags] <target> <text>
-printf '...' | prowl send [flags]
-printf '...' | prowl send [flags] -t <target>
+maestro send [flags] <text>
+maestro send [flags] <target> <text>
+printf '...' | maestro send [flags]
+printf '...' | maestro send [flags] -t <target>
 ```
 
 Where `[flags]` includes `[--no-enter] [--no-wait] [--capture] [--timeout <seconds>] [--json]` and optional selector flags (`-t`, `--worktree`, `--tab`, `--pane`).
@@ -228,8 +228,8 @@ Where `[flags]` includes `[--no-enter] [--no-wait] [--capture] [--timeout <secon
 ### Grammar
 
 ```bash
-prowl key [flags] <token>
-prowl key [flags] <target> <token>
+maestro key [flags] <token>
+maestro key [flags] <target> <token>
 ```
 
 Where `[flags]` includes `[--repeat <n>] [--json]` and optional selector flags (`-t`, `--worktree`, `--tab`, `--pane`).
@@ -251,8 +251,8 @@ Where `[flags]` includes `[--repeat <n>] [--json]` and optional selector flags (
 ### Grammar
 
 ```bash
-prowl read [<target>] [--last <n>] [--json]
-prowl read [-t <...> | --worktree <...> | --tab <...> | --pane <...>] [--last <n>] [--json]
+maestro read [<target>] [--last <n>] [--json]
+maestro read [-t <...> | --worktree <...> | --tab <...> | --pane <...>] [--last <n>] [--json]
 ```
 
 ### Rules
@@ -311,27 +311,27 @@ This model is the handoff contract to app/transport layer.
 Valid:
 
 ```bash
-prowl .
-prowl open ~/Projects/Prowl
-prowl focus 6E1A2A10-D99F-4E3F-920C-D93AA3C05764          # auto-resolve pane UUID
-prowl focus --pane 6E1A2A10-D99F-4E3F-920C-D93AA3C05764    # explicit pane
-prowl focus main                                            # auto-resolve worktree name
-prowl send "echo hello"                                     # text to current pane
-prowl send 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 "echo hi"  # target + text
-printf 'git status' | prowl send --worktree Prowl --json
-prowl key enter                                             # key to current pane
-prowl key 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 ctrl-c      # target + key
-prowl read 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 --last 200 # positional target + flag
+maestro .
+maestro open ~/Projects/Maestro
+maestro focus 6E1A2A10-D99F-4E3F-920C-D93AA3C05764          # auto-resolve pane UUID
+maestro focus --pane 6E1A2A10-D99F-4E3F-920C-D93AA3C05764    # explicit pane
+maestro focus main                                            # auto-resolve worktree name
+maestro send "echo hello"                                     # text to current pane
+maestro send 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 "echo hi"  # target + text
+printf 'git status' | maestro send --worktree Maestro --json
+maestro key enter                                             # key to current pane
+maestro key 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 ctrl-c      # target + key
+maestro read 6E1A2A10-D99F-4E3F-920C-D93AA3C05764 --last 200 # positional target + flag
 ```
 
 Invalid:
 
 ```bash
-prowl focus --pane <id> --tab <id>        # multiple selectors
-prowl focus --pane <id> <positional>      # flag + positional (flag wins, positional ignored)
-prowl send "echo hi" < /tmp/input.txt     # two input sources
-prowl key --repeat 0 enter                 # repeat out of range
-prowl list --pane <id>                     # list does not accept selector
+maestro focus --pane <id> --tab <id>        # multiple selectors
+maestro focus --pane <id> <positional>      # flag + positional (flag wins, positional ignored)
+maestro send "echo hi" < /tmp/input.txt     # two input sources
+maestro key --repeat 0 enter                 # repeat out of range
+maestro list --pane <id>                     # list does not accept selector
 ```
 
 ---

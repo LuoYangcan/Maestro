@@ -1,11 +1,11 @@
-# CLI Contract: `prowl read`
+# CLI Contract: `maestro read`
 
 Status: draft truth source for `#69`.
 
 This file defines the **JSON output contract** for:
 
-- `prowl read --json`
-- `prowl read --last <n> --json`
+- `maestro read --json`
+- `maestro read --last <n> --json`
 
 ## Contract goals
 
@@ -26,25 +26,25 @@ This file defines the **JSON output contract** for:
 {
   "ok": true,
   "command": "read",
-  "schema_version": "prowl.cli.read.v1",
+  "schema_version": "maestro.cli.read.v1",
   "data": {
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "build",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     },
@@ -53,7 +53,7 @@ This file defines the **JSON output contract** for:
     "source": "scrollback",
     "truncated": false,
     "line_count": 87,
-    "text": "Compile Swift module ProwlCore\n..."
+    "text": "Compile Swift module MaestroCore\n..."
   }
 }
 ```
@@ -62,7 +62,7 @@ This file defines the **JSON output contract** for:
 
 - `ok`: boolean, must be `true` on success.
 - `command`: string, must be `"read"`.
-- `schema_version`: string, currently `"prowl.cli.read.v1"`.
+- `schema_version`: string, currently `"maestro.cli.read.v1"`.
 - `data`: object.
 
 ## `data.target` shape
@@ -91,8 +91,8 @@ This file defines the **JSON output contract** for:
 ## `data` capture fields
 
 - `mode`: `"snapshot"` | `"last"`
-  - `"snapshot"` for plain `prowl read`
-  - `"last"` for `prowl read --last N`
+  - `"snapshot"` for plain `maestro read`
+  - `"last"` for `maestro read --last N`
 - `last`: integer or `null`
   - required as an integer when `mode == "last"`
   - must be `null` when `mode == "snapshot"`
@@ -120,7 +120,7 @@ This file defines the **JSON output contract** for:
 {
   "ok": false,
   "command": "read",
-  "schema_version": "prowl.cli.read.v1",
+  "schema_version": "maestro.cli.read.v1",
   "error": {
     "code": "TARGET_NOT_FOUND",
     "message": "No pane matched '6E1A2A10-D99F-4E3F-920C-D93AA3C05764'"
@@ -148,25 +148,25 @@ This file defines the **JSON output contract** for:
 {
   "ok": true,
   "command": "read",
-  "schema_version": "prowl.cli.read.v1",
+  "schema_version": "maestro.cli.read.v1",
   "data": {
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "zsh",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     },
@@ -175,7 +175,7 @@ This file defines the **JSON output contract** for:
     "source": "screen",
     "truncated": false,
     "line_count": 12,
-    "text": "onevcat@mini Prowl % swift test\n..."
+    "text": "onevcat@mini Maestro % swift test\n..."
   }
 }
 ```

@@ -34,7 +34,7 @@ jobs:
           fi
 
           VERSION="${TAG#v}"
-          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/Prowl.dmg"
+          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/Maestro.dmg"
           SHA=$(curl -fL -s "$URL" | shasum -a 256 | awk '{print $1}')
 
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -60,23 +60,23 @@ jobs:
           import re
           import textwrap
 
-          path = pathlib.Path("tap/Casks/prowl.rb")
+          path = pathlib.Path("tap/Casks/maestro.rb")
           version = os.environ["TAP_VERSION"]
           sha = os.environ["TAP_SHA"]
 
           template = textwrap.dedent(
               f"""
-              cask \"prowl\" do
+              cask \"maestro\" do
                 version \"{version}\"
                 sha256 \"{sha}\"
 
-                url \"https://github.com/onevcat/Prowl/releases/download/v#{{version}}/Prowl.dmg\"
-                name \"Prowl\"
+                url \"https://github.com/LuoYangcan/Maestro/releases/download/v#{{version}}/Maestro.dmg\"
+                name \"Maestro\"
                 desc \"Coding agent orchestrator\"
-                homepage \"https://github.com/onevcat/Prowl\"
+                homepage \"https://github.com/LuoYangcan/Maestro\"
 
                 auto_updates true
-                app \"Prowl.app\"
+                app \"Maestro.app\"
 
                 zap trash: [
                   \"~/Library/Application Support/com.yangcanluo.maestro\",
@@ -91,14 +91,26 @@ jobs:
           if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(template)
-            print("Created tap/Casks/prowl.rb")
+            print("Created tap/Casks/maestro.rb")
           else:
             text = path.read_text()
             text = re.sub(r'^[ \t]*desc[ \t]+\".*\"[ \t]*$', '  desc "Coding agent orchestrator"', text, flags=re.M)
             text = re.sub(r'^[ \t]*version[ \t]+\".*\"[ \t]*$', f'  version "{version}"', text, flags=re.M)
             text = re.sub(r'^[ \t]*sha256[ \t]+\".*\"[ \t]*$', f'  sha256 "{sha}"', text, flags=re.M)
+            text = re.sub(
+                r'^[ \t]*url[ \t]+\".*\"[ \t]*$',
+                '  url "https://github.com/LuoYangcan/Maestro/releases/download/v#{version}/Maestro.dmg"',
+                text,
+                flags=re.M,
+            )
+            text = re.sub(
+                r'^[ \t]*homepage[ \t]+\".*\"[ \t]*$',
+                '  homepage "https://github.com/LuoYangcan/Maestro"',
+                text,
+                flags=re.M,
+            )
             path.write_text(text)
-            print("Updated tap/Casks/prowl.rb")
+            print("Updated tap/Casks/maestro.rb")
           PY
 
       - name: Open pull request
@@ -109,7 +121,7 @@ jobs:
           set -euo pipefail
           cd tap
 
-          BRANCH="prowl-${TAG#v}"
+          BRANCH="maestro-${TAG#v}"
 
           if gh pr view --repo onevcat/homebrew-tap --head "onevcat:${BRANCH}" >/dev/null 2>&1; then
             echo "PR already exists for ${BRANCH}."
@@ -117,7 +129,7 @@ jobs:
           fi
 
           git checkout -b "$BRANCH"
-          git add Casks/prowl.rb
+          git add Casks/maestro.rb
 
           if git diff --cached --quiet; then
             echo "No cask changes detected."
@@ -126,18 +138,18 @@ jobs:
 
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -m "Update prowl cask to ${TAG}"
+              commit -m "Update maestro cask to ${TAG}"
 
           git push origin "$BRANCH"
 
           gh pr create \
             --repo onevcat/homebrew-tap \
-            --title "Update prowl cask to ${TAG}" \
+            --title "Update maestro cask to ${TAG}" \
             --body-file - <<EOF
-          Automated update from Prowl release ${TAG}.
+          Automated update from Maestro release ${TAG}.
 
           - Updated \
             - version
             - sha256
-          - Target cask: Casks/prowl.rb
+          - Target cask: Casks/maestro.rb
           EOF

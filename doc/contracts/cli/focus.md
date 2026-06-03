@@ -1,10 +1,10 @@
-# CLI Contract: `prowl focus`
+# CLI Contract: `maestro focus`
 
 Status: draft truth source for `#66`.
 
 This file defines the **JSON output contract** for:
 
-- `prowl focus ... --json`
+- `maestro focus ... --json`
 
 ## Contract goals
 
@@ -25,31 +25,31 @@ This file defines the **JSON output contract** for:
 {
   "ok": true,
   "command": "focus",
-  "schema_version": "prowl.cli.focus.v1",
+  "schema_version": "maestro.cli.focus.v1",
   "data": {
     "requested": {
       "selector": "worktree",
-      "value": "Prowl"
+      "value": "Maestro"
     },
     "resolved_via": "worktree",
     "brought_to_front": true,
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "zsh",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     }
@@ -61,7 +61,7 @@ This file defines the **JSON output contract** for:
 
 - `ok`: boolean, must be `true` on success.
 - `command`: string, must be `"focus"`.
-- `schema_version`: string, currently `"prowl.cli.focus.v1"`.
+- `schema_version`: string, currently `"maestro.cli.focus.v1"`.
 - `data`: object.
 
 ## `data` fields
@@ -124,13 +124,13 @@ The final focused context after the command completed.
 {
   "ok": false,
   "command": "focus",
-  "schema_version": "prowl.cli.focus.v1",
+  "schema_version": "maestro.cli.focus.v1",
   "error": {
     "code": "TARGET_NOT_UNIQUE",
-    "message": "Worktree selector 'Prowl' matched more than one target",
+    "message": "Worktree selector 'Maestro' matched more than one target",
     "details": {
       "selector": "worktree",
-      "value": "Prowl"
+      "value": "Maestro"
     }
   }
 }
@@ -156,7 +156,7 @@ The final focused context after the command completed.
 {
   "ok": true,
   "command": "focus",
-  "schema_version": "prowl.cli.focus.v1",
+  "schema_version": "maestro.cli.focus.v1",
   "data": {
     "requested": {
       "selector": "pane",
@@ -166,21 +166,21 @@ The final focused context after the command completed.
     "brought_to_front": true,
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "build",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     }

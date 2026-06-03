@@ -3,18 +3,18 @@
 import PackageDescription
 
 let package = Package(
-  name: "ProwlCLI",
+  name: "MaestroCLI",
   platforms: [
-    .macOS(.v13),
+    .macOS(.v13)
   ],
   products: [
     .library(
-      name: "ProwlCLIShared",
-      targets: ["ProwlCLIShared"]
+      name: "MaestroCLIShared",
+      targets: ["MaestroCLIShared"]
     ),
     .executable(
-      name: "prowl",
-      targets: ["prowl"]
+      name: "maestro",
+      targets: ["maestro"]
     ),
   ],
   dependencies: [
@@ -23,25 +23,25 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "ProwlCLIShared",
-      path: "supacode/CLIService/Shared"
+      name: "MaestroCLIShared",
+      path: "Maestro/CLIService/Shared"
     ),
     .executableTarget(
-      name: "prowl",
+      name: "maestro",
       dependencies: [
-        "ProwlCLIShared",
+        "MaestroCLIShared",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         .product(name: "Rainbow", package: "Rainbow"),
       ],
-      path: "ProwlCLI"
+      path: "MaestroCLI"
     ),
     .testTarget(
-      name: "ProwlCLITests",
+      name: "MaestroCLITests",
       dependencies: [
-        "ProwlCLIShared",
-        "prowl",
+        "MaestroCLIShared",
+        "maestro",
       ],
-      path: "ProwlCLITests"
+      path: "MaestroCLITests"
     ),
   ]
 )

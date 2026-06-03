@@ -1,6 +1,6 @@
 # Keybinding System
 
-Guide for agents working on keyboard shortcuts in Prowl.
+Guide for agents working on keyboard shortcuts in Maestro.
 
 ## Architecture Overview
 
@@ -44,17 +44,17 @@ appDefault  →  migratedLegacy (from old custom command shortcuts)  →  userOv
 
 | Purpose | File |
 |---------|------|
-| **Data models, resolver, migration** | `supacode/App/KeybindingSchema.swift` |
-| **Built-in command registry** | `supacode/App/AppShortcuts.swift` |
-| **Conflict detection** | `supacode/Features/Settings/BusinessLogic/ShortcutConflictDetector.swift` |
-| **Cascading reset planner** | `supacode/Features/Settings/BusinessLogic/ShortcutResetPlanner.swift` |
-| **NSEvent → key token** | `supacode/Features/Settings/BusinessLogic/ShortcutKeyTokenResolver.swift` |
-| **Settings UI & recorder** | `supacode/Features/Settings/Views/ShortcutsSettingsView.swift` |
-| **Persistence (GlobalSettings)** | `supacode/Features/Settings/Models/GlobalSettings.swift` |
-| **Settings reducer** | `supacode/Features/Settings/Reducer/SettingsFeature.swift` |
-| **App-level resolution & propagation** | `supacode/Features/App/Reducer/AppFeature.swift` |
-| **SwiftUI environment key** | `supacode/App/ResolvedKeybindingsEnvironment.swift` |
-| **Ghostty init & keybinding sync** | `supacode/App/supacodeApp.swift` |
+| **Data models, resolver, migration** | `Maestro/App/KeybindingSchema.swift` |
+| **Built-in command registry** | `Maestro/App/AppShortcuts.swift` |
+| **Conflict detection** | `Maestro/Features/Settings/BusinessLogic/ShortcutConflictDetector.swift` |
+| **Cascading reset planner** | `Maestro/Features/Settings/BusinessLogic/ShortcutResetPlanner.swift` |
+| **NSEvent → key token** | `Maestro/Features/Settings/BusinessLogic/ShortcutKeyTokenResolver.swift` |
+| **Settings UI & recorder** | `Maestro/Features/Settings/Views/ShortcutsSettingsView.swift` |
+| **Persistence (GlobalSettings)** | `Maestro/Features/Settings/Models/GlobalSettings.swift` |
+| **Settings reducer** | `Maestro/Features/Settings/Reducer/SettingsFeature.swift` |
+| **App-level resolution & propagation** | `Maestro/Features/App/Reducer/AppFeature.swift` |
+| **SwiftUI environment key** | `Maestro/App/ResolvedKeybindingsEnvironment.swift` |
+| **Ghostty init & keybinding sync** | `Maestro/App/MaestroApp.swift` |
 
 ## How It Works
 

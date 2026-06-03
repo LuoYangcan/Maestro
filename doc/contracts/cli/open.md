@@ -1,20 +1,20 @@
-# CLI Contract: `prowl open`
+# CLI Contract: `maestro open`
 
 Status: draft truth source for `#64`.
 
 This file defines the **JSON output contract** for the path-opening entry points:
 
-- `prowl`
-- `prowl <cwd>`
-- `prowl open <cwd>`
+- `maestro`
+- `maestro <cwd>`
+- `maestro open <cwd>`
 - any of the above with `--json`
 
 The goal is to give later implementation tasks a stable machine-facing contract.
 
 ## Contract goals
 
-- Bare `prowl <cwd>` and explicit `prowl open <cwd>` must share the same JSON shape.
-- Success output must tell an agent **what Prowl actually focused or opened**.
+- Bare `maestro <cwd>` and explicit `maestro open <cwd>` must share the same JSON shape.
+- Success output must tell an agent **what Maestro actually focused or opened**.
 - Path fields must be normalized to **absolute paths** after CLI parsing.
 - Success output must be stable enough for scripts; human-oriented prose belongs to non-JSON mode.
 - Human-visible success output for `open` should stay silent unless the caller asked for `--json`.
@@ -25,32 +25,32 @@ The goal is to give later implementation tasks a stable machine-facing contract.
 {
   "ok": true,
   "command": "open",
-  "schema_version": "prowl.cli.open.v1",
+  "schema_version": "maestro.cli.open.v1",
   "data": {
     "invocation": "implicit-open",
-    "requested_path": "/Users/onevcat/Projects/Prowl/supacode",
-    "resolved_path": "/Users/onevcat/Projects/Prowl/supacode",
+    "requested_path": "/Users/onevcat/Projects/Maestro/maestro",
+    "resolved_path": "/Users/onevcat/Projects/Maestro/maestro",
     "resolution": "inside-root",
     "app_launched": false,
     "brought_to_front": true,
     "created_tab": true,
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "0E2A7C03-9C01-4BC1-9327-6C1C7B629A52",
-        "title": "supacode",
-        "cwd": "/Users/onevcat/Projects/Prowl/supacode"
+        "title": "maestro",
+        "cwd": "/Users/onevcat/Projects/Maestro/maestro"
       },
       "pane": {
         "id": "0FB4DDB4-A797-4315-A00E-8AAFB32BFC95",
-        "title": "supacode",
-        "cwd": "/Users/onevcat/Projects/Prowl/supacode"
+        "title": "maestro",
+        "cwd": "/Users/onevcat/Projects/Maestro/maestro"
       }
     }
   }
@@ -60,36 +60,36 @@ The goal is to give later implementation tasks a stable machine-facing contract.
 ## Required top-level fields
 
 - `ok`: boolean, must be `true` on success.
-- `command`: string, must be `"open"` even when the user invoked bare `prowl <cwd>`.
-- `schema_version`: string, currently `"prowl.cli.open.v1"`.
+- `command`: string, must be `"open"` even when the user invoked bare `maestro <cwd>`.
+- `schema_version`: string, currently `"maestro.cli.open.v1"`.
 - `data`: object.
 
 ## `data` fields
 
 - `invocation`: string.
-  - `"bare"` for `prowl`
-  - `"implicit-open"` for `prowl <cwd>`
-  - `"open-subcommand"` for `prowl open <cwd>`
+  - `"bare"` for `maestro`
+  - `"implicit-open"` for `maestro <cwd>`
+  - `"open-subcommand"` for `maestro open <cwd>`
 - `requested_path`: string or `null`.
-  - `null` only for bare `prowl` with no explicit path.
+  - `null` only for bare `maestro` with no explicit path.
   - otherwise the absolute path after resolving `.` / `..` / `~` / `file://`.
 - `resolved_path`: string or `null`.
   - `null` only when `requested_path` is `null`.
-  - must be the path Prowl actually targeted after normalization.
+  - must be the path Maestro actually targeted after normalization.
 - `resolution`: string enum.
-  - `"no-argument"`: bare `prowl`
+  - `"no-argument"`: bare `maestro`
   - `"exact-root"`: requested path matched an already-open root exactly
-  - `"inside-root"`: requested path was inside an already-open root, so Prowl focused that root and opened a tab at the exact subpath
-  - `"new-root"`: requested path was not yet managed and Prowl opened it as a new root
+  - `"inside-root"`: requested path was inside an already-open root, so Maestro focused that root and opened a tab at the exact subpath
+  - `"new-root"`: requested path was not yet managed and Maestro opened it as a new root
 - `app_launched`: boolean.
-  - `true` only when the command had to start Prowl.
+  - `true` only when the command had to start Maestro.
 - `brought_to_front`: boolean.
   - must be `true` on success.
 - `created_tab`: boolean.
   - `true` when the operation created a new tab as part of satisfying the request.
-  - `false` when Prowl only focused an existing target.
+  - `false` when Maestro only focused an existing target.
 - `target`: object or `null`, describing the final focused target.
-  - May be `null` for bare `prowl` when Prowl was only brought to front and there is no resolvable visible surface yet.
+  - May be `null` for bare `maestro` when Maestro was only brought to front and there is no resolvable visible surface yet.
 
 ## `target` shape
 
@@ -121,7 +121,7 @@ When present, `target` has the following shape:
 {
   "ok": false,
   "command": "open",
-  "schema_version": "prowl.cli.open.v1",
+  "schema_version": "maestro.cli.open.v1",
   "error": {
     "code": "PATH_NOT_FOUND",
     "message": "No directory exists at '/Users/onevcat/Projects/Missing'",
@@ -136,7 +136,7 @@ When present, `target` has the following shape:
 
 - `ok`: boolean, must be `false`.
 - `command`: string, must be `"open"`.
-- `schema_version`: string, must be `"prowl.cli.open.v1"`.
+- `schema_version`: string, must be `"maestro.cli.open.v1"`.
 - `error.code`: stable machine-readable string.
 - `error.message`: human-readable string.
 - `error.details`: optional object with structured context.
@@ -155,7 +155,7 @@ When present, `target` has the following shape:
 - Success JSON should report the **resolved target**, not only the input path.
 - `target.tab.cwd` and `target.pane.cwd` should be the exact directory the user lands in when available.
 - `created_tab` may be `false` for `exact-root` and `true` for `inside-root`; callers must trust the boolean instead of inferring it from `resolution`.
-- `prowl` without arguments still returns `command: "open"`; it is the app-entry form of the same capability.
+- `maestro` without arguments still returns `command: "open"`; it is the app-entry form of the same capability.
 
 ## Example: exact-root focus
 
@@ -163,32 +163,32 @@ When present, `target` has the following shape:
 {
   "ok": true,
   "command": "open",
-  "schema_version": "prowl.cli.open.v1",
+  "schema_version": "maestro.cli.open.v1",
   "data": {
     "invocation": "open-subcommand",
-    "requested_path": "/Users/onevcat/Projects/Prowl",
-    "resolved_path": "/Users/onevcat/Projects/Prowl",
+    "requested_path": "/Users/onevcat/Projects/Maestro",
+    "resolved_path": "/Users/onevcat/Projects/Maestro",
     "resolution": "exact-root",
     "app_launched": false,
     "brought_to_front": true,
     "created_tab": false,
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "95A6DF8D-4E7E-4A67-895B-0EAF7DB6D7A8",
-        "title": "Prowl 1",
-        "cwd": "/Users/onevcat/Projects/Prowl"
+        "title": "Maestro 1",
+        "cwd": "/Users/onevcat/Projects/Maestro"
       },
       "pane": {
         "id": "7C38206E-1C9D-4740-A6B0-675C3BC93B47",
-        "title": "Prowl",
-        "cwd": "/Users/onevcat/Projects/Prowl"
+        "title": "Maestro",
+        "cwd": "/Users/onevcat/Projects/Maestro"
       }
     }
   }

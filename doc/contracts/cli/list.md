@@ -1,12 +1,12 @@
-# CLI Contract: `prowl list`
+# CLI Contract: `maestro list`
 
 Status: draft truth source for `#65`.
 
 This file defines the **JSON output contract** for:
 
-- `prowl list --json`
+- `maestro list --json`
 
-Non-JSON `prowl list` remains human-readable text and is intentionally outside this file.
+Non-JSON `maestro list` remains human-readable text and is intentionally outside this file.
 
 ## Contract goals
 
@@ -20,27 +20,27 @@ Non-JSON `prowl list` remains human-readable text and is intentionally outside t
 {
   "ok": true,
   "command": "list",
-  "schema_version": "prowl.cli.list.v1",
+  "schema_version": "maestro.cli.list.v1",
   "data": {
     "count": 2,
     "items": [
       {
         "worktree": {
-          "id": "Prowl:/Users/onevcat/Projects/Prowl",
-          "name": "Prowl",
-          "path": "/Users/onevcat/Projects/Prowl",
-          "root_path": "/Users/onevcat/Projects/Prowl",
+          "id": "Maestro:/Users/onevcat/Projects/Maestro",
+          "name": "Maestro",
+          "path": "/Users/onevcat/Projects/Maestro",
+          "root_path": "/Users/onevcat/Projects/Maestro",
           "kind": "git"
         },
         "tab": {
           "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-          "title": "Prowl 1",
+          "title": "Maestro 1",
           "selected": true
         },
         "pane": {
           "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
           "title": "zsh",
-          "cwd": "/Users/onevcat/Projects/Prowl",
+          "cwd": "/Users/onevcat/Projects/Maestro",
           "focused": true
         },
         "task": {
@@ -79,7 +79,7 @@ Non-JSON `prowl list` remains human-readable text and is intentionally outside t
 
 - `ok`: boolean, must be `true` on success.
 - `command`: string, must be `"list"`.
-- `schema_version`: string, currently `"prowl.cli.list.v1"`.
+- `schema_version`: string, currently `"maestro.cli.list.v1"`.
 - `data`: object.
 
 ## `data` fields
@@ -131,10 +131,10 @@ Every item in `data.items` represents exactly one actionable pane.
 {
   "ok": false,
   "command": "list",
-  "schema_version": "prowl.cli.list.v1",
+  "schema_version": "maestro.cli.list.v1",
   "error": {
     "code": "APP_NOT_RUNNING",
-    "message": "Prowl is not running"
+    "message": "Maestro is not running"
   }
 }
 ```
@@ -156,27 +156,27 @@ Every item in `data.items` represents exactly one actionable pane.
 {
   "ok": true,
   "command": "list",
-  "schema_version": "prowl.cli.list.v1",
+  "schema_version": "maestro.cli.list.v1",
   "data": {
     "count": 2,
     "items": [
       {
         "worktree": {
-          "id": "Prowl:/Users/onevcat/Projects/Prowl",
-          "name": "Prowl",
-          "path": "/Users/onevcat/Projects/Prowl",
-          "root_path": "/Users/onevcat/Projects/Prowl",
+          "id": "Maestro:/Users/onevcat/Projects/Maestro",
+          "name": "Maestro",
+          "path": "/Users/onevcat/Projects/Maestro",
+          "root_path": "/Users/onevcat/Projects/Maestro",
           "kind": "git"
         },
         "tab": {
           "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-          "title": "Prowl 1",
+          "title": "Maestro 1",
           "selected": true
         },
         "pane": {
           "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
           "title": "build",
-          "cwd": "/Users/onevcat/Projects/Prowl",
+          "cwd": "/Users/onevcat/Projects/Maestro",
           "focused": true
         },
         "task": {
@@ -185,21 +185,21 @@ Every item in `data.items` represents exactly one actionable pane.
       },
       {
         "worktree": {
-          "id": "Prowl:/Users/onevcat/Projects/Prowl",
-          "name": "Prowl",
-          "path": "/Users/onevcat/Projects/Prowl",
-          "root_path": "/Users/onevcat/Projects/Prowl",
+          "id": "Maestro:/Users/onevcat/Projects/Maestro",
+          "name": "Maestro",
+          "path": "/Users/onevcat/Projects/Maestro",
+          "root_path": "/Users/onevcat/Projects/Maestro",
           "kind": "git"
         },
         "tab": {
           "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-          "title": "Prowl 1",
+          "title": "Maestro 1",
           "selected": true
         },
         "pane": {
           "id": "1344AEF5-3BA6-4B75-A07E-1F36C63A34B0",
           "title": "tests",
-          "cwd": "/Users/onevcat/Projects/Prowl",
+          "cwd": "/Users/onevcat/Projects/Maestro",
           "focused": false
         },
         "task": {

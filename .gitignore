@@ -33,7 +33,7 @@ playground.xcworkspace
 .derivedData/
 
 # Embedded CLI binary (built by `make embed-cli`)
-Resources/prowl-cli/prowl
+Resources/maestro-cli/maestro
 
 # CocoaPods
 #
