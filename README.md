@@ -5,118 +5,50 @@
 <h1 align="center">Maestro</h1>
 
 <p align="center">
-  <b>Your terminal wasn't built for agents. Until now.</b><br>
-  A native macOS command center for running AI coding agents in parallel.
+  并行编排多个 AI 编码 agent 的原生 macOS 终端。
 </p>
 
 <p align="center">
-  <a href="https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg"><b>Download</b></a>
-  ·
-  <a href="https://www.youtube.com/watch?v=4GYlXPttwi0">Watch Demo</a>
+  中文 · <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg"><b>下载</b></a>
 </p>
 
 ---
 
-## Why Maestro?
+Maestro 是 [Prowl](https://github.com/onevcat/Prowl) 的个人 fork（Prowl 本身 fork 自 [Supacode](https://github.com/supabitapp/supacode)），平时主要满足我自己的需求，在此基础上持续做自己的定制。基于 [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) 和 [libghostty](https://github.com/ghostty-org/ghostty) 构建。
 
-You're not just typing commands anymore — you're orchestrating Claude Code, Codex, and friends across repos, branches, and ideas. Maestro is the terminal built for that.
+> 功能简介待补充。
 
-## Highlights
+## 安装
 
-### 🖼 Canvas — every agent, at a glance
+- **下载**：[Maestro.dmg](https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg)（已公证 / notarized）
+- **要求**：macOS 26.0+
 
-Three agents running, one just finished — _where_? Canvas gives you a bird's-eye view where every card is a **live, interactive terminal**, not a screenshot. Finished tasks light up the moment they complete, and you can broadcast a single command to every agent at once.
+## 开发与构建
 
-<br clear="all">
-
-### 📚 Shelf — your worktrees, lined up like books on a shelf
-
-Every worktree becomes a vertical **spine** stacked on the side, with its tabs nested underneath. Flip through your stack from the keyboard — **`⌘⌃←` / `⌘⌃→` cycles books · `⌘⌃↑` / `⌘⌃↓` cycles tabs** — so when you've got six agents in flight, you triage them one keystroke at a time, never losing your place.
-
-<br clear="all">
-
-### ⚡ Custom Actions — one keystroke, any workflow
-
-Pin `swift build`, `npm test`, or `claude -p "review this diff"` to a button and bind it to `⌘B`. Set it up once per repo and stop typing the same thing every day. Pair with `claude -p` / `codex exec` to turn your terminal into a daily AI-powered assistant.
-
-<br clear="all">
-
-### 🤖 CLI — let your agents drive the terminal
-
-Your agent needs to run a test, read the output, and decide what's next. Maestro ships with a `maestro` CLI so both you and your agents can control the terminal programmatically:
+需要 [mise](https://mise.jdx.dev/) 提供 zig / swiftlint 等工具链。
 
 ```bash
-maestro list                         # discover panes & their status
-maestro send "npm test" --capture    # execute & capture output in one shot
-maestro read                         # read screen content on demand
-maestro key <keystroke>              # send keystrokes programmatically
+make build-ghostty-xcframework   # 从 Zig 源码构建 GhosttyKit
+make build-app                   # 构建 macOS app（Debug）
+make run-app                     # 构建、启动并流式查看日志
+make install-dev-build           # 构建 Debug 并安装到 /Applications
+make install-release             # 构建 Release，本地签名并安装到 /Applications
 ```
-
-### And the stuff you'd expect, done right
-
-- **Full Native** — powered by libghostty. No Electron, no web views. CJK-safe out of the box.
-- **Vertical Tabs** — repos, branches, and worktrees in a sidebar. Never lose context.
-- **Git Worktree first-class** — spin up a parallel branch for a new agent in one click.
-- **Agent Reminder** — macOS notification the moment an agent finishes.
-- **Auto-updates** — Sparkle keeps you on the latest release.
-
-## Install
-
-**Download:** [Maestro.dmg](https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg) (notarized)
-
-## Requirements
-
-macOS 26.0+
-
----
-
-## For Developers
-
-A personal fork of [Supacode](https://github.com/supabitapp/supacode), built on [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) and [libghostty](https://github.com/ghostty-org/ghostty), maintained for daily use. Requires [mise](https://mise.jdx.dev/) for dev tooling.
-
-### Build & run
 
 ```bash
-make build-ghostty-xcframework   # Build GhosttyKit from Zig source
-make build-app                   # Build the macOS app (Debug)
-make run-app                     # Build, launch, and stream logs
-make install-dev-build           # Build Debug and install to /Applications
-make install-release             # Build Release, sign locally, install to /Applications
+make check                       # 格式化改动文件 + swift-format lint + SwiftLint
+make test                        # 运行单元测试
+make build-cli                   # 构建 maestro CLI
 ```
 
-### Develop & test
+## 致谢
 
-```bash
-make check                 # Format changed Swift files, then run swift-format lint + SwiftLint
-make format-changed        # Format changed Swift files only
-make format                # Full-tree Swift format cleanup
-make lint                  # SwiftLint only
-make test                  # Run app/unit tests
-make log-stream            # Stream app logs (subsystem: com.yangcanluo.maestro)
-```
+站在 [Prowl](https://github.com/onevcat/Prowl) 与 [Supacode](https://github.com/supabitapp/supacode) 的肩膀上。
 
-### CLI
+## License
 
-```bash
-make build-cli             # Build `maestro` CLI via SwiftPM
-make test-cli-smoke        # Quick CLI smoke checks
-make test-cli-integration  # End-to-end CLI socket integration tests
-```
-
-### Ghostty sync
-
-```bash
-make ensure-ghostty        # Fast SHA check (auto-run by build-app/test)
-make sync-ghostty          # Force rebuild + clear DerivedData
-```
-
-### Release
-
-Day-to-day releases are driven by the `release` [Claude Code](https://claude.com/product/claude-code) skill defined in [`.claude/skills/release/SKILL.md`](.claude/skills/release/SKILL.md). It wraps two scripts you can also run directly:
-
-```bash
-./doc/scripts/release-notes.sh <VERSION>   # Generate user-facing notes → build/release-notes.md
-./doc/scripts/release.sh <VERSION>         # Bump, build, sign, notarize, DMG, appcast, GitHub Release, Maestro-Site update
-```
-
-The skill walks the flow interactively: verify branch & tree state, confirm the version, review the generated notes, then run `release.sh`. All fork releases are notarized.
+[FSL-1.1-ALv2](LICENSE)
