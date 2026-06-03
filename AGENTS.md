@@ -121,7 +121,6 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 - When implementing a new feature or fixing a bug that is unrelated to the current branch's active work, first create a dedicated branch from the latest `origin/main`; then work, commit, push, and open a PR from that branch.
 - Automatically commit your changes and your changes only. Do not use `git add .`
 - Before you go on your task, check the current git branch name, if it's something generic like an animal name, name it accordingly. Do not do this for main branch
-- After implementing an execplan, always submit a PR if you're not in the main branch
 - All development stays in my own fork. PRs must target `LuoYangcan/Prowl` (the `origin` remote), never the upstream `onevcat/Prowl` or `supabitapp/supacode`, unless explicitly requested.
 - Fork releases must be notarized. Never publish non-notarized releases (`ENABLE_NOTARIZATION=0` is forbidden).
 
