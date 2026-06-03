@@ -31,7 +31,7 @@ stack of upcoming spines.
 
 ## Concept Mapping
 
-| Shelf concept | Prowl model |
+| Shelf concept | Maestro model |
 |---|---|
 | Book | A worktree or a plain folder |
 | Spine | The book's vertical tab bar; also carries its identity (worktree/folder name + branch) |
@@ -97,12 +97,12 @@ as the new spine slides into its sidebar-order position.
 
 ### Tab List (below header)
 
-- Each tab is rendered as **its icon only** (Prowl already supports per-tab
+- Each tab is rendered as **its icon only** (Maestro already supports per-tab
   custom icons). No label text in the slot.
 - Each slot is a uniform-sized clickable target.
 - **Hotkey overlay**: when the user holds **⌘ (Command)**, the icon in each
   slot is **replaced** by the tab's `Cmd+N` digit (1–9). Slot size and position
-  do not change — there is zero layout shift. This matches Prowl's existing
+  do not change — there is zero layout shift. This matches Maestro's existing
   "hold ⌘ to reveal hotkeys" behavior.
 - For tabs at index ≥ 10 (no `Cmd+N` hotkey): when ⌘ is held, the slot continues
   to show the icon (optionally slightly dimmed to hint "no hotkey"); details left
@@ -118,7 +118,7 @@ as the new spine slides into its sidebar-order position.
 ### Bottom Controls
 
 - A row of three buttons at the spine's bottom: **`+` / vertical split /
-  horizontal split**, mirroring Prowl's standard tab bar.
+  horizontal split**, mirroring Maestro's standard tab bar.
 - These controls are **only shown on the spine of the currently open book**.
   Closed-book spines do not show them (acting on a non-open book first requires
   opening it).
@@ -212,7 +212,7 @@ on whether the targeted book is already the open book.
 
 ### Closing Tabs
 
-Mirror Prowl's normal-mode tab close behavior:
+Mirror Maestro's normal-mode tab close behavior:
 
 - **Hover X**: hovering a tab slot reveals a small X button to close it.
 - **Right-click menu**: right-clicking a tab slot opens a tab-level context
@@ -277,7 +277,7 @@ Right-click scoping:
 
 ## Keyboard Shortcuts
 
-All Shelf-related shortcuts are **configurable** through Prowl's existing
+All Shelf-related shortcuts are **configurable** through Maestro's existing
 keybinding system (`scope = configurableAppAction`), exposed in
 `Settings → Shortcuts`.
 

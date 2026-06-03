@@ -1,4 +1,4 @@
-# Prowl CLI JSON Schema Definitions (v1)
+# Maestro CLI JSON Schema Definitions (v1)
 
 Status: draft truth source for #96.
 
@@ -23,9 +23,9 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://prowl.onev.cat/contracts/cli/v1/schema-bundle.json",
-  "title": "Prowl CLI Output Contract Schemas (v1)",
-  "description": "Bundle of output JSON schemas for prowl open/list/focus/send/key/read v1",
+  "$id": "https://github.com/LuoYangcan/Maestro/contracts/cli/v1/schema-bundle.json",
+  "title": "Maestro CLI Output Contract Schemas (v1)",
+  "description": "Bundle of output JSON schemas for maestro open/list/focus/send/key/read v1",
   "type": "object",
   "additionalProperties": false,
   "$defs": {
@@ -150,7 +150,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "open" },
-        "schema_version": { "const": "prowl.cli.open.v1" },
+        "schema_version": { "const": "maestro.cli.open.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -227,7 +227,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "open" },
-        "schema_version": { "const": "prowl.cli.open.v1" },
+        "schema_version": { "const": "maestro.cli.open.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -264,7 +264,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "list" },
-        "schema_version": { "const": "prowl.cli.list.v1" },
+        "schema_version": { "const": "maestro.cli.list.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -306,7 +306,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "list" },
-        "schema_version": { "const": "prowl.cli.list.v1" },
+        "schema_version": { "const": "maestro.cli.list.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -336,7 +336,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "focus" },
-        "schema_version": { "const": "prowl.cli.focus.v1" },
+        "schema_version": { "const": "maestro.cli.focus.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -386,7 +386,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "focus" },
-        "schema_version": { "const": "prowl.cli.focus.v1" },
+        "schema_version": { "const": "maestro.cli.focus.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -422,7 +422,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "send" },
-        "schema_version": { "const": "prowl.cli.send.v1" },
+        "schema_version": { "const": "maestro.cli.send.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -480,7 +480,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "send" },
-        "schema_version": { "const": "prowl.cli.send.v1" },
+        "schema_version": { "const": "maestro.cli.send.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -518,7 +518,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "key" },
-        "schema_version": { "const": "prowl.cli.key.v1" },
+        "schema_version": { "const": "maestro.cli.key.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -586,7 +586,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "key" },
-        "schema_version": { "const": "prowl.cli.key.v1" },
+        "schema_version": { "const": "maestro.cli.key.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -625,7 +625,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": true },
         "command": { "const": "read" },
-        "schema_version": { "const": "prowl.cli.read.v1" },
+        "schema_version": { "const": "maestro.cli.read.v1" },
         "data": {
           "type": "object",
           "additionalProperties": false,
@@ -690,7 +690,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
       "properties": {
         "ok": { "const": false },
         "command": { "const": "read" },
-        "schema_version": { "const": "prowl.cli.read.v1" },
+        "schema_version": { "const": "maestro.cli.read.v1" },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -724,12 +724,12 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
 
 ## Usage notes
 
-- Validate `prowl open --json` output against `#/$defs/openResponse`
-- Validate `prowl list --json` output against `#/$defs/listResponse`
-- Validate `prowl focus --json` output against `#/$defs/focusResponse`
-- Validate `prowl send --json` output against `#/$defs/sendResponse`
-- Validate `prowl key --json` output against `#/$defs/keyResponse`
-- Validate `prowl read --json` output against `#/$defs/readResponse`
+- Validate `maestro open --json` output against `#/$defs/openResponse`
+- Validate `maestro list --json` output against `#/$defs/listResponse`
+- Validate `maestro focus --json` output against `#/$defs/focusResponse`
+- Validate `maestro send --json` output against `#/$defs/sendResponse`
+- Validate `maestro key --json` output against `#/$defs/keyResponse`
+- Validate `maestro read --json` output against `#/$defs/readResponse`
 
 ## Non-goals (v1)
 

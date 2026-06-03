@@ -1,0 +1,23 @@
+/// Which presentation the app enters on launch. `normal` keeps the
+/// historical behavior (sidebar + terminal detail); `shelf` boots
+/// straight into Shelf and `canvas` boots straight into Canvas, so
+/// power users who live in those views don't have to toggle them
+/// every time they open Maestro.
+enum DefaultViewMode: String, CaseIterable, Identifiable, Codable, Sendable {
+  case normal
+  case shelf
+  case canvas
+
+  var id: String { rawValue }
+
+  var title: String {
+    switch self {
+    case .normal:
+      return "Normal View"
+    case .shelf:
+      return "Shelf View"
+    case .canvas:
+      return "Canvas View"
+    }
+  }
+}

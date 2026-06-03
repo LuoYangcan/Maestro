@@ -1,6 +1,6 @@
 # Ghostty Fork Sync
 
-Prowl embeds GhosttyKit from `ThirdParty/ghostty`. The submodule points to the `onevcat/ghostty` fork so Prowl can carry small embedded API patches that are not yet upstream.
+Maestro embeds GhosttyKit from `ThirdParty/ghostty`. The submodule points to the `onevcat/ghostty` fork so Maestro can carry small embedded API patches that are not yet upstream.
 
 ## Branch Model
 
@@ -69,7 +69,7 @@ Build GhosttyKit with Xcode 26.3:
 DEVELOPER_DIR=/Applications/Xcode-26.3.0.app/Contents/Developer make sync-ghostty
 ```
 
-Build Prowl itself with the current Xcode, typically Xcode 26.4:
+Build Maestro itself with the current Xcode, typically Xcode 26.4:
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode-26.4.1.app/Contents/Developer make build-app

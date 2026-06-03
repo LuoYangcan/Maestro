@@ -17,7 +17,7 @@ Future upstream checks should only inspect commits **after** this baseline.
 
 - Created `onevcat/ghostty` fork branch `release/v1.3.1-patched` from upstream tag `v1.3.1`.
 - Added fork-only embedded C API `ghostty_surface_pid(ghostty_surface_t)` for per-pane agent process detection.
-- Prowl submodule now tracks the patched fork branch. Upgrade procedure is documented in
+- Maestro submodule now tracks the patched fork branch. Upgrade procedure is documented in
   `doc/fork-sync-ghostty.md`.
 
 ---
@@ -48,18 +48,18 @@ Reviewed 25 commits on `supabitapp/supacode` from `c4e9be3b` (v0.8.1, 2026-04-19
 
 ### Decisions
 
-- **Ported to Prowl PRs**: Ghostty key routing (#255), fork-aware PR repo resolution (#256), worktree history
+- **Ported to Maestro PRs**: Ghostty key routing (#255), fork-aware PR repo resolution (#256), worktree history
   (#260), dynamic window title plus main-window quit behavior (#261), loading overlay polish (#262), sidebar animation
   CPU fix (#263), Android Studio editor support (#264), sidebar right-arrow focus (#265), test workflow concurrency
   (#266), and `CFBundleIconName` metadata (#267).
 - **Reviewed and skipped**: Notifications UX (#266 upstream), inactive split dimming (#260 upstream), tab renaming
   (#269 upstream), and bare-repo detection (#263 upstream) were already covered, intentionally different, or not
   currently applicable in the fork.
-- **Skipped due fork-specific architecture**: Repository title/color (#276 upstream) conflicts with Prowl's richer
+- **Skipped due fork-specific architecture**: Repository title/color (#276 upstream) conflicts with Maestro's richer
   repository appearance model; Kiro/Pi agent hooks rely on upstream settings/hook modules not present in this fork;
-  Run Script dropdown caching does not apply to Prowl's current popover/button implementation.
+  Run Script dropdown caching does not apply to Maestro's current popover/button implementation.
 - **Skipped due fork release policy**: Upstream release-tip/warm-cache/inspect-dependencies workflow concurrency and
-  semantic version bumps do not apply. Prowl keeps local, notarized, date-based releases.
+  semantic version bumps do not apply. Maestro keeps local, notarized, date-based releases.
 
 ---
 
@@ -69,8 +69,8 @@ Reviewed 25 commits on `supabitapp/supacode` from `c4e9be3b` (v0.8.1, 2026-04-19
 
 Reviewed 47 commits on `supabitapp/supacode` from `0150ceaf` (v0.8.0) through `c4e9be3b` (v0.8.1, 2026-04-19). Significant additions:
 
-- **Tuist migration** (`02d75cd5` + ~20 follow-ups) — upstream replaced the checked-in Xcode project with a generated Tuist workspace. Driven by a `release-tip` archive regression (the new `supacode-cli` Xcode target archived with `SKIP_INSTALL = NO`, polluting archives with `Products/usr/local/bin/supacode` and breaking `developer-id` export) plus configuration sprawl across pbxproj, Makefile, CI workflows, and in-source `sed` patching of Sentry/PostHog keys in `supacodeApp.swift`.
-- **CLI tool** (`e57d744d`, #227) — Unix-socket CLI `supacode` with `open`/`worktree`/`tab`/`surface`/`repo`/`settings`/`socket` subcommands. Orchestration-focused, dispatches via deeplink URLs.
+- **Tuist migration** (`02d75cd5` + ~20 follow-ups) — upstream replaced the checked-in Xcode project with a generated Tuist workspace. Driven by a `release-tip` archive regression in the new upstream CLI Xcode target, which archived with `SKIP_INSTALL = NO`, polluted the archive with a command-line product, and broke `developer-id` export, plus configuration sprawl across pbxproj, Makefile, CI workflows, and in-source telemetry key patching.
+- **CLI tool** (`e57d744d`, #227) — Unix-socket upstream CLI with `open`/`worktree`/`tab`/`surface`/`repo`/`settings`/`socket` subcommands. Orchestration-focused, dispatches via deeplink URLs.
 - **Script CLI + deeplinks** (`788dcff4` #253, `1f38a0c1` #246) — multi-script per repo, `worktree run --script UUID`, `worktree script list`.
 - **Folder (non-git) repo support** (`68e44966`, #257); atomic `sidebar.json` state (`7981cf34`, #254); Icon Composer app icon for macOS 26 Liquid Glass (`f37b698f`, #230).
 - **Ghostty `toggle-background-opacity`** (`1792e377`, #225) — same feature fork already implements via `5ca2bf4e` (2026-03-21, 3 weeks earlier).
@@ -78,8 +78,8 @@ Reviewed 47 commits on `supabitapp/supacode` from `0150ceaf` (v0.8.0) through `c
 
 ### Decisions
 
-- **Tuist migration**: **Skip.** Fork sidesteps the `release-tip` archive bug by construction — `ProwlCLI` is a SwiftPM `executableTarget`, not an Xcode target, and is pre-copied into `Resources/prowl-cli/` as a folder reference. Archives already contain only `Products/Applications/supacode.app`; `/usr/local/bin/prowl` symlinks into `/Applications/Prowl.app/Contents/Resources/prowl-cli/prowl`. Migrating would force rewriting the `/release` skill, notarization flow, appcast generation, and every rebrand patch for zero functional gain.
-- **CLI (#227, #253, #246)**: **Skip.** Fork's `prowl` CLI targets agent scripting (`send`/`key`/`read` with stdin piping, output capture, timeout, keyboard token synthesis); upstream's CLI targets orchestration (`worktree archive/pin/delete`, `tab/surface new/split/close`, `repo`/`settings`/`socket`). The two are orthogonal, not duplicative. Future work may selectively port upstream's orchestration commands into `ProwlCLI`'s envelope-based transport, but nothing forces action today.
+- **Tuist migration**: **Skip.** Fork sidesteps the `release-tip` archive bug by construction — `MaestroCLI` is a SwiftPM `executableTarget`, not an Xcode target, and is pre-copied into `Resources/maestro-cli/` as a folder reference. Archives already contain only `Products/Applications/Maestro.app`; `/usr/local/bin/maestro` symlinks into `/Applications/Maestro.app/Contents/Resources/maestro-cli/maestro`. Migrating would force rewriting the `/release` skill, notarization flow, appcast generation, and every rebrand patch for zero functional gain.
+- **CLI (#227, #253, #246)**: **Skip.** Fork's `maestro` CLI targets agent scripting (`send`/`key`/`read` with stdin piping, output capture, timeout, keyboard token synthesis); upstream's CLI targets orchestration (`worktree archive/pin/delete`, `tab/surface new/split/close`, `repo`/`settings`/`socket`). The two are orthogonal, not duplicative. Future work may selectively port upstream's orchestration commands into `MaestroCLI`'s envelope-based transport, but nothing forces action today.
 - **Ghostty `#225`**: **Defer to next sync of the affected files.** Upstream version is slightly cleaner — state on `GhosttyRuntime` instead of per-view (fixes multi-split-same-window ambiguity), reset on config reload, early-return in fullscreen, Bool return, debug logs. No user-visible bug in fork. When next editing `GhosttySurfaceView.swift` / `GhosttySurfaceBridge.swift` / `GhosttyRuntime.swift`, replace fork's implementation with upstream's and preserve the fork-only `chromeBackgroundColor(...)` call in `applyWindowBackgroundAppearance`.
 - **Everything else**: Nothing user-facing for the fork. Re-evaluate on next review.
 
@@ -129,7 +129,7 @@ The table below was the original per-commit tracking format, preserved for refer
 | Execute Terminal Input custom commands by injecting return key so the command runs immediately. | `562042f` | Fork only |
 | Disable push-triggered `tip` release workflow in fork to avoid expected CI failures. | `85b3fd7` | Fork only |
 | Enforce notarized-only fork releases; block non-notarized publishing path in release script and docs. | `2ab70fd` | Fork only |
-| Move repo-scoped settings files to `~/.prowl/repo/<repo-last-path>/` (was `~/.supacode/repo/…`) with legacy migration from repo root files. | `ea9259f` | Fork only |
+| Move repo-scoped settings files into the fork's application data directory with legacy migration from repo root files. | `ea9259f` | Fork only |
 | Add `/fork-release` slash command for upstream sync and private release workflow. | `64829dc` | Fork only |
 | Add diff window with file tree sidebar and YiTong DiffView for viewing worktree changes. | `0d03848`, `09194c4` | Fork only |
 | Wire up diff badge click in worktree row, `Cmd+]` shortcut, and Show Diff menu item. | `59dc4f6` | Fork only |
@@ -142,20 +142,20 @@ The table below was the original per-commit tracking format, preserved for refer
 | Add two-finger scroll to pan canvas via NSView scroll-wheel interception. | `2738c24` | Fork only |
 | Fix canvas pinch-to-zoom to anchor on cursor position instead of origin. | `c24e092` | Fork only |
 | Add PreToolUse hook to block `gh pr create` targeting upstream; PRs must explicitly target fork. | `9970560` | Fork only |
-| Add PR target rule to CLAUDE.md: always target `onevcat/supacode`, never upstream. | `962ba62` | Fork only |
-| Rebrand user-facing identity from Supacode to Prowl: app name, icon, bundle display name, settings file paths (`prowl.json`), subsystem identifiers, and about/UI strings. Keep module name as `supacode` for code compatibility. | `5f7d84a`…`5676418` | Fork only |
+| Add PR target rule to CLAUDE.md: always target the fork, never upstream. | `962ba62` | Fork only |
+| Rebrand user-facing identity to the fork brand: app name, icon, bundle display name, settings file paths, subsystem identifiers, and about/UI strings. | `5f7d84a`…`5676418` | Fork only |
 | Add public release infrastructure: Sparkle EdDSA key setup, date-based version scheme (`YYYY.M.DD`), full release script with DMG/notarization/appcast, `install-release` Makefile target, `/release` and `/sync-upstream` commands. | — | Fork only |
 | Parallelize repository startup loading to speed up launch with many repos. | `8dd8eac` | Merged upstream |
 | Run bundled `wt` binary directly instead of shell discovery for faster worktree operations. | `ed27b31` | Merged upstream |
 | Evolve Canvas card layout algorithm (waterfall → MaxRects → combined row-break + waterfall packing) for better space utilization; auto-arrange cards on first Canvas entry per session; improved fit-to-view scaling. | `15bafd1`…`fc81375` | Fork only |
 | Add Canvas toggle shortcut; auto-focus the previously active card when entering Canvas; exit Canvas to the focused worktree+tab; move Canvas and Show Diff to View menu. | `38a6361`, `3c4dc3c`, `17df275`, `d9dde25` | Fork only |
 | Implement Ghostty `prompt-title` and `open-config` callbacks: surface prompts update tab titles; open-config opens Ghostty config in default text editor. | `2b55336`…`1352165` | Fork only |
-| Route Ghostty window actions (`toggle_fullscreen`, `toggle_maximize`, `toggle_background_opacity`, `quit`, `close_window`) through Prowl; quit goes through TCA `requestQuit` for confirm-before-quit. | `5ca2bf4`…`4732780` | Fork only |
+| Route Ghostty window actions (`toggle_fullscreen`, `toggle_maximize`, `toggle_background_opacity`, `quit`, `close_window`) through Maestro; quit goes through TCA `requestQuit` for confirm-before-quit. | `5ca2bf4`…`4732780` | Fork only |
 | Filter duplicate and unsupported Ghostty actions from command palette. | `512c5b3`, `c8c562f` | Fork only |
 | Add command finished notification for long-running terminal commands with configurable duration threshold; Canvas highlights the entire title bar for unseen notifications, tracked per-tab. | `182e165`…`d7bb4b6` | Fork only |
 | Mark notifications as read on key input to focused terminal surface; suppress command finished notification after recent user interaction. | `26968c1`, `2db9ae5` | Fork only |
 | Add repository snapshot startup cache to skip full git scan on re-launch when worktrees haven't changed. | `7136591` | Pending upstream (#162) |
 | Fix unicode paths in diff and untracked file output. | `1b32a26` | Fork only |
-| Fix settings migration to copy instead of move, preserving `~/.supacode` for upstream compatibility. | `07121b6` | Fork only |
+| Fix settings migration to copy instead of move, preserving the legacy upstream data directory for compatibility. | `07121b6` | Fork only |
 | Use Claude to generate user-facing release notes; skip generation when pre-written notes exist. | `64d0928`, `849b5cf` | Fork only |
 | Remove CI release workflows (`release.yml`, `release-tip.yml`) and make tip update channel equivalent to stable; releases are now handled locally via `/release` skill. | `7f79078`, `4546b66` | Fork only |

@@ -1,10 +1,10 @@
-# CLI Contract: `prowl send`
+# CLI Contract: `maestro send`
 
 Status: draft truth source for `#67`.
 
 This file defines the **JSON output contract** for:
 
-- `prowl send ... --json`
+- `maestro send ... --json`
 
 ## Contract goals
 
@@ -38,12 +38,12 @@ By default, `send` waits for the delivered command to finish before returning. T
 `data.input.source` is **inferred from where the accepted payload came from**. It is not a separate `--source` flag.
 
 - `"argv"`
-  - means the payload came from the positional text argument of `prowl send`
-  - typical trigger: `prowl send "echo hello"`
+  - means the payload came from the positional text argument of `maestro send`
+  - typical trigger: `maestro send "echo hello"`
   - planned use: short, explicit, human-authored inline sends
 - `"stdin"`
   - means the payload came from process stdin, usually via a pipe or redirection
-  - typical trigger: `printf 'echo hello\n' | prowl send`
+  - typical trigger: `printf 'echo hello\n' | maestro send`
   - planned use: multiline text, generated text, file/pipe input, or payloads you do not want to expose inline in shell history
 
 ## Success payload
@@ -52,25 +52,25 @@ By default, `send` waits for the delivered command to finish before returning. T
 {
   "ok": true,
   "command": "send",
-  "schema_version": "prowl.cli.send.v1",
+  "schema_version": "maestro.cli.send.v1",
   "data": {
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "zsh",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     },
@@ -93,7 +93,7 @@ By default, `send` waits for the delivered command to finish before returning. T
 
 - `ok`: boolean, must be `true` on success.
 - `command`: string, must be `"send"`.
-- `schema_version`: string, currently `"prowl.cli.send.v1"`.
+- `schema_version`: string, currently `"maestro.cli.send.v1"`.
 - `data`: object.
 
 ## `data.target` shape
@@ -134,7 +134,7 @@ By default, `send` waits for the delivered command to finish before returning. T
 ## `data.created_tab`
 
 - boolean
-- `true` only when targeting a worktree that had no current tab and Prowl had to create one before sending.
+- `true` only when targeting a worktree that had no current tab and Maestro had to create one before sending.
 
 ## `data.wait`
 
@@ -157,7 +157,7 @@ By default, `send` waits for the delivered command to finish before returning. T
 {
   "ok": false,
   "command": "send",
-  "schema_version": "prowl.cli.send.v1",
+  "schema_version": "maestro.cli.send.v1",
   "error": {
     "code": "EMPTY_INPUT",
     "message": "No text payload was provided"
@@ -190,25 +190,25 @@ By default, `send` waits for the delivered command to finish before returning. T
 {
   "ok": true,
   "command": "send",
-  "schema_version": "prowl.cli.send.v1",
+  "schema_version": "maestro.cli.send.v1",
   "data": {
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "Claude",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     },
@@ -233,25 +233,25 @@ By default, `send` waits for the delivered command to finish before returning. T
 {
   "ok": true,
   "command": "send",
-  "schema_version": "prowl.cli.send.v1",
+  "schema_version": "maestro.cli.send.v1",
   "data": {
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "zsh",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     },

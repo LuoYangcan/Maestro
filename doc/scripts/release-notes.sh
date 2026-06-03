@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate release notes for the next Prowl version.
+# Generate release notes for the next Maestro version.
 #
 # Usage: ./doc/scripts/release-notes.sh [VERSION]
 #
@@ -108,7 +108,7 @@ generate_llm_notes() {
 
   local prompt
   prompt="$(cat <<'PROMPT'
-You are writing release notes for **Prowl**, a macOS app that runs multiple
+You are writing release notes for **Maestro**, a macOS app that runs multiple
 coding agents in parallel, each in its own terminal tab.
 
 Given the raw context below (commits, PR descriptions, diff stats), produce a
@@ -116,7 +116,7 @@ concise, user-facing changelog in Markdown.
 
 ## Rules
 
-1. **Audience**: Prowl end-users (developers). They care about what changed in
+1. **Audience**: Maestro end-users (developers). They care about what changed in
    their day-to-day experience, not internal code structure.
 2. **Include only user-visible changes**: new features, behavior changes, UX
    improvements, notable bug fixes. Skip pure refactors, test-only changes,
@@ -180,7 +180,7 @@ generate_fallback_notes() {
 
 # ── Validation ───────────────────────────────────────────────────────────────
 
-# Lint a release-notes file against the CHANGELOG format used by Prowl-Site.
+# Lint a release-notes file against the CHANGELOG format used by Maestro-Site.
 # Returns 0 on clean, 1 if violations were found (also prints them).
 # Section headings must be `### New` / `### Fixed` / `### Improved` (level 3)
 # so they sit one level below the `## [VERSION]` header that release.sh

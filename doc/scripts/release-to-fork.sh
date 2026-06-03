@@ -198,7 +198,7 @@ echo "[release] build app"
 make build-app
 
 echo "[release] resolve app path from xcodebuild settings"
-SETTINGS="$(xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Debug -showBuildSettings -json 2>/dev/null)"
+SETTINGS="$(xcodebuild -project Maestro.xcodeproj -scheme Maestro -configuration Debug -showBuildSettings -json 2>/dev/null)"
 BUILD_DIR="$(echo "$SETTINGS" | jq -r '.[0].buildSettings.BUILT_PRODUCTS_DIR')"
 PRODUCT_NAME="$(echo "$SETTINGS" | jq -r '.[0].buildSettings.FULL_PRODUCT_NAME')"
 APP_PATH="${BUILD_DIR}/${PRODUCT_NAME}"

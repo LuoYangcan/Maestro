@@ -1,16 +1,16 @@
 # CLI Install Command Implementation Plan
 
-**Goal:** Allow users to install the `prowl` CLI tool from within the Prowl app via three entry points: Settings, Prowl menu, and Command Palette.
+**Goal:** Allow users to install the `maestro` CLI tool from within the Maestro app via three entry points: Settings, Maestro menu, and Command Palette.
 
 **Scope:**
-- In: CLIInstallClient dependency, Advanced Settings UI, Prowl menu item, Command Palette item, AppFeature wiring, Makefile CLI embedding, tests
+- In: CLIInstallClient dependency, Advanced Settings UI, Maestro menu item, Command Palette item, AppFeature wiring, Makefile CLI embedding, tests
 - Out: Auto-prompting on first launch, uninstall UI (can be added later), CLI build as part of Xcode build phase (manual `make build-cli` for now)
 
 **Architecture:**
 - `CLIInstallClient`: TCA dependency client that handles symlink creation, status checking, and bundled binary path resolution
 - Install action lives in `AppFeature` — all three entry points (Settings, Menu, Command Palette) funnel into the same `installCLI` action
-- CLI binary is embedded at `Prowl.app/Contents/Resources/prowl-cli/prowl`
-- Installation creates a symlink: `/usr/local/bin/prowl` → bundled binary path
+- CLI binary is embedded at `Maestro.app/Contents/Resources/maestro-cli/maestro`
+- Installation creates a symlink: `/usr/local/bin/maestro` → bundled binary path
 - Advanced Settings gets a new "Command Line Tool" section showing install status + install/uninstall button
 
 **Acceptance / Verification:**
@@ -18,7 +18,7 @@
 - All existing tests pass
 - New CLIInstallClient tests pass
 - New AppFeature CLI install reducer tests pass
-- Menu item "Install Command Line Tool" visible under Prowl menu
+- Menu item "Install Command Line Tool" visible under Maestro menu
 - Command Palette shows "Install Command Line Tool" item
 - Settings > Advanced shows CLI install section with status and action button
 
@@ -27,14 +27,14 @@
 ## Task 1: Create CLIInstallClient dependency
 
 **Files:**
-- Create: `supacode/Clients/CLIInstall/CLIInstallClient.swift`
+- Create: `Maestro/Clients/CLIInstall/CLIInstallClient.swift`
 
 **Steps:**
 1. Create `CLIInstallClient` struct following `WorkspaceClient` pattern
 2. Provide operations:
-   - `bundledCLIURL: @Sendable () -> URL?` — returns `Bundle.main.resourceURL/prowl-cli/prowl`
+   - `bundledCLIURL: @Sendable () -> URL?` — returns `Bundle.main.resourceURL/maestro-cli/maestro`
    - `installationStatus: @Sendable () -> CLIInstallStatus` — checks if symlink exists and points to correct target
-   - `install: @Sendable (URL) async throws -> Void` — creates symlink at given path (default `/usr/local/bin/prowl`)
+   - `install: @Sendable (URL) async throws -> Void` — creates symlink at given path (default `/usr/local/bin/maestro`)
    - `uninstall: @Sendable (URL) async throws -> Void` — removes symlink at given path
 3. Define `CLIInstallStatus` enum: `.notInstalled`, `.installed(path: String)`, `.installedDifferentSource(path: String)`
 4. Implement `DependencyKey` with `liveValue` and `testValue`
@@ -50,7 +50,7 @@
 ## Task 2: Add CLI install actions to AppFeature
 
 **Files:**
-- Modify: `supacode/Features/App/Reducer/AppFeature.swift` (add actions and reducer cases)
+- Modify: `Maestro/Features/App/Reducer/AppFeature.swift` (add actions and reducer cases)
 
 **Steps:**
 1. Add new actions to AppFeature.Action:
@@ -69,7 +69,7 @@
 ## Task 3: Add CLI install section to Advanced Settings
 
 **Files:**
-- Modify: `supacode/Features/Settings/Views/AdvancedSettingsView.swift` (add CLI section)
+- Modify: `Maestro/Features/Settings/Views/AdvancedSettingsView.swift` (add CLI section)
 
 **Steps:**
 1. Add a new `Section("Command Line Tool")` in `AdvancedSettingsView`
@@ -83,19 +83,19 @@
 - Handle these in AppFeature's `.settings(.delegate(...))` case
 
 **Notes:**
-- Show the install path (`/usr/local/bin/prowl`) in the UI
+- Show the install path (`/usr/local/bin/maestro`) in the UI
 - Show a green checkmark or status text for installed state
 - The view should refresh status when the settings tab appears
 
 ---
 
-## Task 4: Add menu item in Prowl menu
+## Task 4: Add menu item in Maestro menu
 
 **Files:**
-- Modify: `supacode/App/supacodeApp.swift` (add menu item in Prowl menu group)
+- Modify: `Maestro/App/MaestroApp.swift` (add menu item in Maestro menu group)
 
 **Steps:**
-1. Add a `CommandGroup(after: .appSettings)` or within the existing Prowl menu area
+1. Add a `CommandGroup(after: .appSettings)` or within the existing Maestro menu area
 2. Add "Install Command Line Tool..." button
 3. Button sends `store.send(.installCLI)` action
 4. Add appropriate `.help()` text
@@ -105,9 +105,9 @@
 ## Task 5: Add Command Palette item
 
 **Files:**
-- Modify: `supacode/Features/CommandPalette/CommandPaletteItem.swift` (add Kind case)
-- Modify: `supacode/Features/CommandPalette/Reducer/CommandPaletteFeature.swift` (add item, delegate, mapping)
-- Modify: `supacode/Features/App/Reducer/AppFeature.swift` (handle new delegate)
+- Modify: `Maestro/Features/CommandPalette/CommandPaletteItem.swift` (add Kind case)
+- Modify: `Maestro/Features/CommandPalette/Reducer/CommandPaletteFeature.swift` (add item, delegate, mapping)
+- Modify: `Maestro/Features/App/Reducer/AppFeature.swift` (handle new delegate)
 
 **Steps:**
 1. Add `case installCLI` to `CommandPaletteItem.Kind`
@@ -128,20 +128,20 @@
 - Modify: `Makefile` (add target to build CLI for bundle)
 
 **Steps:**
-1. Add `build-cli-release` target: `swift build -c release --product prowl`
-2. Add `embed-cli` target: copies release binary to `Resources/prowl-cli/prowl`
+1. Add `build-cli-release` target: `swift build -c release --product maestro`
+2. Add `embed-cli` target: copies release binary to `Resources/maestro-cli/maestro`
 3. Update `build-app` to depend on `embed-cli` (or document manual step)
-4. Add `Resources/prowl-cli/` to Xcode "Copy Bundle Resources" if not auto-included
+4. Add `Resources/maestro-cli/` to Xcode "Copy Bundle Resources" if not auto-included
 
 **Notes:**
-- For development, `Resources/prowl-cli/prowl` can be a placeholder — the actual install will use the bundled path at runtime
+- For development, `Resources/maestro-cli/maestro` can be a placeholder — the actual install will use the bundled path at runtime
 
 ---
 
 ## Task 7: Tests for CLIInstallClient
 
 **Files:**
-- Create: `supacodeTests/CLIInstallClientTests.swift`
+- Create: `MaestroTests/CLIInstallClientTests.swift`
 
 **Steps:**
 1. Test `installationStatus` returns `.notInstalled` when no symlink exists
@@ -161,7 +161,7 @@
 ## Task 8: Tests for AppFeature CLI install reducer
 
 **Files:**
-- Create: `supacodeTests/AppFeatureCLIInstallTests.swift`
+- Create: `MaestroTests/AppFeatureCLIInstallTests.swift`
 
 **Steps:**
 1. Test `.installCLI` action triggers client install call

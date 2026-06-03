@@ -51,7 +51,7 @@ runs:
     - name: SPM cache
       uses: actions/cache@v4
       with:
-        path: ~/Library/Caches/supacode-spm-cache/SourcePackages
+        path: ~/Library/Caches/Maestro-spm-cache/SourcePackages
         key: ${{ runner.os }}-${{ runner.arch }}-spm-v0-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-spm-v0-
@@ -65,7 +65,7 @@ runs:
         # `actions/cache` restores without re-uploading — the cache is content-addressed
         # by file hash, so unchanged files still hit; changed files miss and recompile
         # locally without invalidating the saved snapshot.
-        key: ${{ runner.os }}-${{ runner.arch }}-xcode-compilation-cache-v1-${{ hashFiles('Package.resolved', 'supacode.xcodeproj/project.pbxproj') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-xcode-compilation-cache-v1-${{ hashFiles('Package.resolved', 'Maestro.xcodeproj/project.pbxproj') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-xcode-compilation-cache-v1-
           ${{ runner.os }}-${{ runner.arch }}-xcode-compilation-cache-

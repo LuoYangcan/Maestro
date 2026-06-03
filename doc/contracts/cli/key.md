@@ -1,10 +1,10 @@
-# CLI Contract: `prowl key`
+# CLI Contract: `maestro key`
 
 Status: draft truth source for `#68`.
 
 This file defines the **input/output contract** for:
 
-- `prowl key ... --json`
+- `maestro key ... --json`
 
 ## What changed in this revision
 
@@ -36,10 +36,10 @@ Compared with the initial draft, this version makes `key` broader and more scrip
 - Prefer `--pane <id>` for deterministic scripting.
 - Use `--tab` / `--worktree` for human-friendly calls when exact pane ID is not needed.
 - Typical loop:
-  1) `prowl list --json`
+  1) `maestro list --json`
   2) resolve target pane
-  3) `prowl key --pane <pane-id> <token> [--repeat n]`
-  4) `prowl read --pane <pane-id> --last <n> --json`
+  3) `maestro key --pane <pane-id> <token> [--repeat n]`
+  4) `maestro read --pane <pane-id> --last <n> --json`
 
 ## Supported targeting
 
@@ -53,7 +53,7 @@ Compared with the initial draft, this version makes `key` broader and more scrip
 ### Positional token
 
 ```bash
-prowl key [target selectors] <token> [--repeat <n>] [--json]
+maestro key [target selectors] <token> [--repeat <n>] [--json]
 ```
 
 Rules:
@@ -111,7 +111,7 @@ Canonical normalized tokens now include:
 {
   "ok": true,
   "command": "key",
-  "schema_version": "prowl.cli.key.v1",
+  "schema_version": "maestro.cli.key.v1",
   "data": {
     "requested": {
       "token": "Ctrl+C",
@@ -128,21 +128,21 @@ Canonical normalized tokens now include:
     },
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "Claude",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     }
@@ -154,7 +154,7 @@ Canonical normalized tokens now include:
 
 - `ok`: boolean, must be `true` on success.
 - `command`: string, must be `"key"`.
-- `schema_version`: string, currently `"prowl.cli.key.v1"`.
+- `schema_version`: string, currently `"maestro.cli.key.v1"`.
 - `data`: object.
 
 ## `data` fields
@@ -222,7 +222,7 @@ Same shape used by other CLI contracts:
 {
   "ok": false,
   "command": "key",
-  "schema_version": "prowl.cli.key.v1",
+  "schema_version": "maestro.cli.key.v1",
   "error": {
     "code": "UNSUPPORTED_KEY",
     "message": "The key token 'hyper-k' is not supported.",
@@ -256,7 +256,7 @@ Same shape used by other CLI contracts:
 {
   "ok": true,
   "command": "key",
-  "schema_version": "prowl.cli.key.v1",
+  "schema_version": "maestro.cli.key.v1",
   "data": {
     "requested": {
       "token": "return",
@@ -273,21 +273,21 @@ Same shape used by other CLI contracts:
     },
     "target": {
       "worktree": {
-        "id": "Prowl:/Users/onevcat/Projects/Prowl",
-        "name": "Prowl",
-        "path": "/Users/onevcat/Projects/Prowl",
-        "root_path": "/Users/onevcat/Projects/Prowl",
+        "id": "Maestro:/Users/onevcat/Projects/Maestro",
+        "name": "Maestro",
+        "path": "/Users/onevcat/Projects/Maestro",
+        "root_path": "/Users/onevcat/Projects/Maestro",
         "kind": "git"
       },
       "tab": {
         "id": "2FC00CF0-3974-4E1B-BEF8-7A08A8E3B7C0",
-        "title": "Prowl 1",
+        "title": "Maestro 1",
         "selected": true
       },
       "pane": {
         "id": "6E1A2A10-D99F-4E3F-920C-D93AA3C05764",
         "title": "zsh",
-        "cwd": "/Users/onevcat/Projects/Prowl",
+        "cwd": "/Users/onevcat/Projects/Maestro",
         "focused": true
       }
     }

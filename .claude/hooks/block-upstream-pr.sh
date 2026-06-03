@@ -7,15 +7,15 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
 # Only inspect gh pr create commands
 if echo "$COMMAND" | grep -qE 'gh\s+pr\s+create'; then
-  # Allow if explicitly targeting the fork (onevcat/Prowl)
-  if echo "$COMMAND" | grep -qE '(--repo|--repo=|-R)\s*onevcat/Prowl'; then
+  # Allow if explicitly targeting the fork (LuoYangcan/Maestro)
+  if echo "$COMMAND" | grep -qE '(--repo|--repo=|-R)\s*LuoYangcan/Maestro'; then
     exit 0
   fi
   cat <<EOF >&2
 BLOCKED: gh pr create must explicitly target the fork.
 
-Use:  gh pr create --repo onevcat/Prowl ...
-Never target upstream (supabitapp/supacode).
+Use:  gh pr create --repo LuoYangcan/Maestro ...
+Never target upstream (onevcat/Prowl or supabitapp/supacode).
 EOF
   exit 2
 fi
