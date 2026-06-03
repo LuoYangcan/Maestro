@@ -12,10 +12,6 @@
   <a href="README.md">中文</a> · English
 </p>
 
-<p align="center">
-  <a href="https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg"><b>Download</b></a>
-</p>
-
 ---
 
 Maestro is a personal fork of [Prowl](https://github.com/onevcat/Prowl) (itself a fork of [Supacode](https://github.com/supabitapp/supacode)), maintained mostly for my own day-to-day use with my own customizations on top. Built on [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) and [libghostty](https://github.com/ghostty-org/ghostty).
@@ -24,8 +20,7 @@ Maestro is a personal fork of [Prowl](https://github.com/onevcat/Prowl) (itself 
 
 ## Install
 
-- **Download:** [Maestro.dmg](https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg) (notarized)
-- **Requires:** macOS 26.0+
+No prebuilt download yet — build from source (see "Develop & build" below). Requires macOS 26.0+.
 
 ## Develop & build
 
