@@ -23,7 +23,7 @@ This file provides machine-validatable JSON Schema definitions for the v1 CLI ou
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://maestro.onev.cat/contracts/cli/v1/schema-bundle.json",
+  "$id": "https://github.com/LuoYangcan/Maestro/contracts/cli/v1/schema-bundle.json",
   "title": "Maestro CLI Output Contract Schemas (v1)",
   "description": "Bundle of output JSON schemas for maestro open/list/focus/send/key/read v1",
   "type": "object",

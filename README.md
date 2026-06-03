@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://maestro.onev.cat/images/maestro-icon-rounded.png" width="128" alt="Maestro">
+  <img src="doc/maestro-icon.png" width="128" alt="Maestro">
 </p>
 
 <h1 align="center">Maestro</h1>
@@ -13,14 +13,6 @@
   <a href="https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg"><b>Download</b></a>
   ·
   <a href="https://www.youtube.com/watch?v=4GYlXPttwi0">Watch Demo</a>
-  ·
-  <a href="https://maestro.onev.cat">Website</a>
-  ·
-  <code>brew install --cask onevcat/tap/maestro</code>
-</p>
-
-<p align="center">
-  <img src="https://maestro.onev.cat/images/promotion.webp" alt="Maestro — vertical tabs, terminals, command palette, and split view">
 </p>
 
 ---
@@ -33,23 +25,17 @@ You're not just typing commands anymore — you're orchestrating Claude Code, Co
 
 ### 🖼 Canvas — every agent, at a glance
 
-<img align="right" width="360" src="https://maestro.onev.cat/images/feature-canvas.webp" alt="Canvas view of multiple live agent terminals">
-
 Three agents running, one just finished — _where_? Canvas gives you a bird's-eye view where every card is a **live, interactive terminal**, not a screenshot. Finished tasks light up the moment they complete, and you can broadcast a single command to every agent at once.
 
 <br clear="all">
 
 ### 📚 Shelf — your worktrees, lined up like books on a shelf
 
-<img align="left" width="360" src="https://maestro.onev.cat/images/shelf-view.webp" alt="Shelf view with vertical worktree spines and tabs">
-
 Every worktree becomes a vertical **spine** stacked on the side, with its tabs nested underneath. Flip through your stack from the keyboard — **`⌘⌃←` / `⌘⌃→` cycles books · `⌘⌃↑` / `⌘⌃↓` cycles tabs** — so when you've got six agents in flight, you triage them one keystroke at a time, never losing your place.
 
 <br clear="all">
 
 ### ⚡ Custom Actions — one keystroke, any workflow
-
-<img align="right" width="360" src="https://maestro.onev.cat/images/feature-custom-actions.png" alt="Custom Actions with per-repo buttons and shortcuts">
 
 Pin `swift build`, `npm test`, or `claude -p "review this diff"` to a button and bind it to `⌘B`. Set it up once per repo and stop typing the same thing every day. Pair with `claude -p` / `codex exec` to turn your terminal into a daily AI-powered assistant.
 
@@ -77,12 +63,6 @@ maestro key <keystroke>              # send keystrokes programmatically
 ## Install
 
 **Download:** [Maestro.dmg](https://github.com/LuoYangcan/Maestro/releases/latest/download/Maestro.dmg) (notarized)
-
-**Homebrew:**
-
-```bash
-brew install --cask onevcat/tap/maestro
-```
 
 ## Requirements
 
