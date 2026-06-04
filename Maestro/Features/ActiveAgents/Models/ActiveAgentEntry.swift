@@ -5,7 +5,7 @@ struct ActiveAgentEntry: Identifiable, Equatable, Sendable {
   /// The worktree that physically owns the agent's terminal surface (the tab's worktree).
   /// Drives navigation/focus (`focusSurface`/`selectWorktree`), so it must stay the surface's
   /// real owner even when the agent runs in a different directory. Display name/branch come from
-  /// `workingDirectory` instead — see `SidebarListView.activeAgentRowDisplay`.
+  /// `workingDirectory` instead — see `ActiveAgentRowDisplayResolver.display`.
   let worktreeID: Worktree.ID
   let worktreeName: String
   /// The agent's current working directory at detection time, used to resolve the displayed

@@ -102,7 +102,7 @@ struct RepositorySectionViewTests {
       worktrees: [worktree]
     )
 
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
       repositories: [repository],
       customTitles: [repository.id: "Maestro"],
       repositoryAppearances: [repository.id: RepositoryAppearance(color: .blue)]
@@ -123,7 +123,7 @@ struct RepositorySectionViewTests {
       worktrees: []
     )
 
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
       repositories: [repository],
       customTitles: [:]
     )
@@ -148,7 +148,7 @@ struct RepositorySectionViewTests {
     )
     let agentRepo = makeRepository(id: "/tmp/other-repo", name: "custom-agent-repo", worktrees: [agentWorktree])
     let repositories: IdentifiedArrayOf<Repository> = [tabRepo, agentRepo]
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
       repositories: repositories,
       customTitles: [:]
     )
@@ -159,7 +159,7 @@ struct RepositorySectionViewTests {
       // A nested sub-directory still resolves to the enclosing worktree.
       workingDirectory: URL(fileURLWithPath: "/tmp/other-repo/src")
     )
-    let display = SidebarListView.activeAgentRowDisplay(
+    let display = ActiveAgentRowDisplayResolver.display(
       for: entry,
       repositories: repositories,
       metadata: metadata
@@ -183,9 +183,9 @@ struct RepositorySectionViewTests {
       name: "repo",
       worktrees: [mainWorktree, nestedWorktree]
     )
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(repositories: [repository], customTitles: [:])
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(repositories: [repository], customTitles: [:])
 
-    let key = SidebarListView.resolveWorktreeID(
+    let key = ActiveAgentRowDisplayResolver.resolveWorktreeID(
       forWorkingDirectory: URL(fileURLWithPath: "/tmp/repo/worktrees/feature/lib"),
       in: [repository]
     )
@@ -196,21 +196,21 @@ struct RepositorySectionViewTests {
       worktreeName: mainWorktree.name,
       workingDirectory: URL(fileURLWithPath: "/tmp/repo/worktrees/feature/lib")
     )
-    let display = SidebarListView.activeAgentRowDisplay(for: entry, repositories: [repository], metadata: metadata)
+    let display = ActiveAgentRowDisplayResolver.display(for: entry, repositories: [repository], metadata: metadata)
     #expect(display.titleName == "feature")
     #expect(display.branchName == "feature")
   }
 
   @Test func activeAgentRowDisplayResolvesPlainFolderByRootURL() {
     let repository = makeRepository(id: "/tmp/notes", name: "notes", kind: .plain, worktrees: [])
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(repositories: [repository], customTitles: [:])
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(repositories: [repository], customTitles: [:])
 
     let entry = makeAgentEntry(
       worktreeID: repository.id,
       worktreeName: repository.name,
       workingDirectory: URL(fileURLWithPath: "/tmp/notes/inbox")
     )
-    let display = SidebarListView.activeAgentRowDisplay(for: entry, repositories: [repository], metadata: metadata)
+    let display = ActiveAgentRowDisplayResolver.display(for: entry, repositories: [repository], metadata: metadata)
 
     #expect(display.titleName == "notes")
     #expect(display.branchName == "notes")
@@ -219,14 +219,14 @@ struct RepositorySectionViewTests {
   @Test func activeAgentRowDisplayFallsBackToPathComponentForUnknownDirectory() {
     let tabWorktree = makeWorktree(repoRoot: "/tmp/tab-repo", path: "/tmp/tab-repo", branch: "main")
     let tabRepo = makeRepository(id: "/tmp/tab-repo", name: "tab-repo", worktrees: [tabWorktree])
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(repositories: [tabRepo], customTitles: [:])
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(repositories: [tabRepo], customTitles: [:])
 
     let entry = makeAgentEntry(
       worktreeID: tabWorktree.id,
       worktreeName: tabWorktree.name,
       workingDirectory: URL(fileURLWithPath: "/tmp/scratch/playground")
     )
-    let display = SidebarListView.activeAgentRowDisplay(for: entry, repositories: [tabRepo], metadata: metadata)
+    let display = ActiveAgentRowDisplayResolver.display(for: entry, repositories: [tabRepo], metadata: metadata)
 
     #expect(display.titleName == "playground")
     #expect(display.branchName == "playground")
@@ -236,14 +236,14 @@ struct RepositorySectionViewTests {
   @Test func activeAgentRowDisplayFallsBackToOwningWorktreeWhenDirectoryUnknown() {
     let tabWorktree = makeWorktree(repoRoot: "/tmp/tab-repo", path: "/tmp/worktrees/tab-repo-main", branch: "main")
     let tabRepo = makeRepository(id: "/tmp/tab-repo", name: "tab-repo", worktrees: [tabWorktree])
-    let metadata = SidebarListView.activeAgentWorktreeMetadata(repositories: [tabRepo], customTitles: [:])
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(repositories: [tabRepo], customTitles: [:])
 
     let entry = makeAgentEntry(
       worktreeID: tabWorktree.id,
       worktreeName: tabWorktree.name,
       workingDirectory: nil
     )
-    let display = SidebarListView.activeAgentRowDisplay(for: entry, repositories: [tabRepo], metadata: metadata)
+    let display = ActiveAgentRowDisplayResolver.display(for: entry, repositories: [tabRepo], metadata: metadata)
 
     #expect(display.titleName == "tab-repo-main")
     #expect(display.branchName == "main")
