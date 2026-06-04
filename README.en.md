@@ -16,7 +16,12 @@
 
 Maestro is a personal fork of [Prowl](https://github.com/onevcat/Prowl) (itself a fork of [Supacode](https://github.com/supabitapp/supacode)), maintained mostly for my own day-to-day use with my own customizations on top. Built on [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) and [libghostty](https://github.com/ghostty-org/ghostty).
 
-> Feature overview coming later.
+## Features
+
+- Run coding agents in parallel across worktrees, with a live "Active Agents" sidebar panel + system menu-bar indicator
+- Canvas / Shelf terminal views
+- Built-in diff window for worktree changes
+- `maestro` CLI for scripting agents
 
 ## Install
 

@@ -12,6 +12,8 @@ Date-based versioning: `YYYY.M.DD` (e.g., `2026.3.18`). Same-day collisions appe
 
 ### Sparkle Auto-Update
 
+> Note: the app currently ships with auto-update checks disabled by default (`GlobalSettings.updatesAutomaticallyCheckForUpdates = false`) and the Updates settings tab hidden, because no appcast has been published yet. The config below is the target infrastructure; once the first release publishes `appcast.xml`, re-enable the default and restore the Updates tab.
+
 - Feed URL: `https://github.com/LuoYangcan/Maestro/releases/latest/download/appcast.xml` (hosted as a GitHub Release asset)
 - EdDSA public key configured in `Maestro/Info.plist` as `SUPublicEDKey`
 - Private key stored in macOS Keychain and exported to `~/.maestro-sparkle-private-key`
@@ -106,7 +108,7 @@ Builds a Release archive, signs it locally, and installs to `/Applications`.
 | --- | --- | --- |
 | `APPLE_SIGNING_IDENTITY` | auto-detected | Developer ID Application identity |
 | `APPLE_TEAM_ID` | from identity | Apple Team ID |
-| `APPLE_NOTARY_KEYCHAIN_PROFILE` | `supacode-notary` | Keychain profile for notarytool |
+| `APPLE_NOTARY_KEYCHAIN_PROFILE` | `supacode-notary` | Keychain profile for notarytool (legacy name retained from before the Maestro rename) |
 | `SPARKLE_PRIVATE_KEY_FILE` | `~/.maestro-sparkle-private-key` | EdDSA private key for appcast |
 
 ## Notarization Credentials
