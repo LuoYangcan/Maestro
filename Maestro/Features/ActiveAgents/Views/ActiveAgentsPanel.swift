@@ -5,7 +5,7 @@ import SwiftUI
 struct ActiveAgentsPanel: View {
   @Bindable var store: StoreOf<ActiveAgentsFeature>
   /// Per-entry title/branch labels resolved from each agent's working directory by the parent
-  /// (see `SidebarListView.activeAgentRowDisplays`); keeps this view presentational.
+  /// (see `ActiveAgentRowDisplayResolver.displays`); keeps this view presentational.
   let rowDisplays: [ActiveAgentEntry.ID: ActiveAgentRowDisplay]
   let selectedSurfaceID: UUID?
   /// Merged "⌥⌃↑↓" hint shown while Cmd is held; `nil` hides it (bindings customized

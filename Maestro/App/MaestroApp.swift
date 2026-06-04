@@ -42,6 +42,7 @@ final class MaestroAppDelegate: NSObject, NSApplicationDelegate {
   }
   var terminalManager: WorktreeTerminalManager?
   var cliSocketServer: CLISocketServer?
+  private var activeAgentsStatusItem: ActiveAgentsStatusItemController?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     WindowLifecycleDiagnostics.startMainThreadHeartbeat()
@@ -52,6 +53,12 @@ final class MaestroAppDelegate: NSObject, NSApplicationDelegate {
     UserDefaults.standard.register(defaults: [
       "ApplePressAndHoldEnabled": false
     ])
+    if let appStore, let terminalManager {
+      activeAgentsStatusItem = ActiveAgentsStatusItemController(
+        store: appStore,
+        terminalManager: terminalManager
+      )
+    }
     appStore?.send(.appLaunched)
   }
 
