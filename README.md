@@ -16,7 +16,12 @@
 
 Maestro 是 [Prowl](https://github.com/onevcat/Prowl) 的个人 fork（Prowl 本身 fork 自 [Supacode](https://github.com/supabitapp/supacode)），平时主要满足我自己的需求，在此基础上持续做自己的定制。基于 [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) 和 [libghostty](https://github.com/ghostty-org/ghostty) 构建。
 
-> 功能简介待补充。
+## 功能
+
+- 多 worktree 并行运行编码 agent；侧边栏「Active Agents」面板 + 系统菜单栏实时显示运行状态
+- Canvas / Shelf 两种终端视图
+- 内置 diff 窗口查看 worktree 改动
+- `maestro` 命令行脚本化驱动 agent
 
 ## 安装
 

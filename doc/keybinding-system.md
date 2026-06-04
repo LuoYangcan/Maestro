@@ -24,7 +24,7 @@ ResolvedKeybindingMap (merged result: default + migrated + user)
 
 | Scope | `allowUserOverride` | Conflict Policy | Example |
 |-------|---------------------|-----------------|---------|
-| `configurableAppAction` | true | `warnAndPreferUserOverride` | New Worktree, Command Palette, Toggle Sidebar |
+| `configurableAppAction` | true | `warnAndPreferUserOverride` | New Worktree, Command Palette, Toggle Sidebar, Active Agents panel ⌘⌥P, agent nav ⌃⌥↑↓ |
 | `systemFixedAppAction` | false | `disallowUserOverride` | Quit App — cannot be changed |
 | `localInteraction` | true | `localOnly` | Rename Branch, Select All Canvas Cards |
 | `customCommand` | true | `warnAndPreferUserOverride` | User-defined repo commands |

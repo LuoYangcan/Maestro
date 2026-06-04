@@ -13,6 +13,26 @@ Future upstream checks should only inspect commits **after** this baseline.
 
 ---
 
+## 2026-06-04 — Rebrand to Maestro + fork divergence
+
+### Fork-only changes
+
+- **Rebrand supacode/Prowl → Maestro** (`5b2bb2e2`, `e6a14c5e`) — renamed app module dir `supacode/`→`Maestro/` and `supacodeTests/`→`MaestroTests/`, the CLI target `ProwlCLI`→`MaestroCLI` (binary `prowl`→`maestro`, `ProwlVersion`→`MaestroVersion`), the Xcode project `supacode.xcodeproj`→`Maestro.xcodeproj` and scheme to `Maestro` (`PRODUCT_NAME=Maestro`), Makefile recipes, SPM cache paths, and the embedded CLI resource dir `Resources/prowl-cli`→`maestro-cli`. Bundle ID, Application Support data dir, drag UTType, UserDefaults key, dispatch queue label, and log subsystem all switched to `com.yangcanluo.maestro`; Sparkle feed repointed at `LuoYangcan/Maestro`; Homebrew cask zap paths updated. App display name and Quit menu now read "Maestro".
+- **Analytics/telemetry removed** (`5b2bb2e2`) — dropped PostHog and Sentry SPM packages; `AnalyticsClient.liveValue` is now no-ops; `AnalyticsContext` + `InstallIdentifier` deleted. `MemoryWatchdog` kept but rewired from analytics/Sentry to local `SupaLogger` logging. Makefile drops `PROWL_SENTRY_DSN` / `PROWL_POSTHOG_*` secrets.
+- **Updates tab hidden, auto-update disabled** (`8db5dc10`) — removed the Updates tab from the Settings sidebar and defaulted `updatesAutomaticallyCheckForUpdates` to `false` so the fork does not background-check a non-existent appcast. The toolbar update button self-hides when no update is available.
+- **Upstream distribution links removed** (`bcc3e0d9`) — dropped Homepage / Release Notes / Submit GitHub Issue links (onevcat / prowl.onev.cat) from the sidebar footer Help menu and the menu-bar Help command group.
+- **Active agents surfaced in the system menu bar** (`7de6b191`, PR #10) — added an `NSStatusItem` (conductor-cat icon + stacked red/green blocked/done dots) and a popover listing running agents across worktrees, driving the `NSStatusItem` directly (MenuBarExtra's two-slot label limit forced going around SwiftUI).
+- **Active agent directory/title accuracy fixes** (`bd9fcf26`, `5b4d9322`, `fbd717ae`, PR #4) — active-agent rows resolve their working directory from the agent process's actual cwd, refresh on directory changes, and show the worktree directory in the title so rows identify the correct worktree.
+- **Docs consolidated into `doc/`** (`9bde569b`) — renamed `doc-onevcat/`→`doc/` and dropped ~3500 lines of transient upstream design docs / implementation plans, keeping CLI contracts, fork-sync/release docs, and this change list; updated references in `AGENTS.md`, skills, and `OpenCommandHandler`.
+- **README rewritten + icon refresh** (`fa70d7de`, `1b6c462b`, `21607123`, `923b60b8`, `b090eff3`) — bilingual landing page (`README.md` + `README.en.md`) framed as a personal fork, dead onevcat download/marketing links removed, in-repo icon asset (`doc/maestro-icon.png`), schema `$id` moved off `maestro.onev.cat`, and the macOS app icon refreshed to the conductor-cat.
+
+### Decisions
+
+- **All dev/PRs stay in the personal fork** — PRs target `LuoYangcan/Maestro`, never upstream (`onevcat/Prowl` or `supabitapp/supacode`); the `block-upstream-pr` hook (introduced `9970560`, repointed at the renamed fork in `909738fe`) enforces this, and the "always submit a PR after an execplan" rule was removed (`d2638538`).
+- **Auto-update stays off** until the fork ships its own appcast; the Sparkle wiring/reducer are retained but do not background-check by default.
+
+---
+
 ## 2026-05-09 — Ghostty fork patch
 
 - Created `onevcat/ghostty` fork branch `release/v1.3.1-patched` from upstream tag `v1.3.1`.

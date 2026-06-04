@@ -39,13 +39,17 @@ Maestro is a macOS orchestrator for running multiple coding agents in parallel, 
 ```
 AppFeature (root TCA store)
 ├─ RepositoriesFeature (repos + worktrees)
+│  └─ ActiveAgentsFeature (live roster of detected agents; sidebar panel + menu-bar item)
 ├─ CommandPaletteFeature
 ├─ SettingsFeature (appearance, updates, repo settings)
-└─ UpdatesFeature (Sparkle auto-updates)
+└─ UpdatesFeature (Sparkle wiring; auto-check disabled by default — no published appcast yet)
+
+ActiveAgentsStatusItemController (NSStatusItem, owned by MaestroAppDelegate)
+└─ NSPopover → ActiveAgentsMenuBarContent (lists running agents; click jumps focus)
 
 WorktreeTerminalManager (global @Observable terminal state)
 ├─ selectedWorktreeID (tracks current selection for bell logic)
-└─ WorktreeTerminalState (per worktree)
+└─ WorktreeTerminalState (per worktree; runs agent-detection poll loop)
     └─ TerminalTabManager (tab/split management)
         └─ GhosttySurfaceState[] (one per terminal surface)
 
@@ -53,6 +57,10 @@ GhosttyRuntime (shared singleton)
 └─ ghostty_app_t (single C instance)
     └─ ghostty_surface_t[] (independent terminal sessions)
 ```
+
+### Active Agents
+
+`ActiveAgentsFeature` (`@Reducer`, nested in `RepositoriesFeature`) holds an `IdentifiedArrayOf<ActiveAgentEntry>` in arrival order plus a focus anchor. Data flows OUT of the terminal layer: `WorktreeTerminalState` polls each surface, builds a `PaneAgentState` whose derived `displayState` is an `AgentDisplayState` (working / blocked / done / idle), and emits `TerminalClient.Event.agentEntryChanged` / `.agentEntryRemoved`. `AppFeature.task` drains the event stream and relays into `.repositories(.activeAgents(...))`. Clicking a row sends `.activeAgents(.entryTapped(id))`; `RepositoriesFeature` intercepts it to call `terminalClient.focusSurface` then select the worktree/repo. The roster renders both as a resizable sidebar panel (`ActiveAgentsPanel`) and a system menu-bar item (`ActiveAgentsStatusItemController`, created in `MaestroAppDelegate.applicationDidFinishLaunching`, drawing stacked red/green status dots). Detection is gated via `TerminalClient.Command.setAgentDetectionEnabled` — skipped when the panel is hidden and `autoShowActiveAgentsPanel` is off. Keybindings: ⌘⌥P toggles the panel; ⌃⌥↑/↓ step through agents.
 
 ### TCA ↔ Terminal Communication
 
@@ -64,15 +72,15 @@ Reducer → terminalClient.send(Command) → WorktreeTerminalManager
 Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 ```
 
-- **Commands**: `createTab`, `closeFocusedTab`, `prune`, `setSelectedWorktreeID`, etc.
-- **Events**: `notificationReceived`, `tabCreated`, `tabClosed`, `focusChanged`, `taskStatusChanged`
+- **Commands**: `createTab`, `closeFocusedTab`, `prune`, `setSelectedWorktreeID`, `setAgentDetectionEnabled`, etc.
+- **Events**: `notificationReceived`, `tabCreated`, `tabClosed`, `focusChanged`, `taskStatusChanged`, `agentEntryChanged`, `agentEntryRemoved`
 - Wired in `MaestroApp.swift`, subscribed in `AppFeature.task`
 
 ### Key Dependencies
 
 - **TCA (swift-composable-architecture)**: App state, reducers, side effects
 - **GhosttyKit**: Terminal emulator (built from Zig source in ThirdParty/ghostty)
-- **Sparkle**: Auto-update framework
+- **Sparkle**: Auto-update framework (auto-check disabled by default in this fork — no published appcast yet)
 - **swift-dependencies**: Dependency injection for TCA clients
 
 ## Ghostty Keybindings Handling
@@ -124,5 +132,5 @@ Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
 
 ## Submodules
 
-- `ThirdParty/ghostty` (`https://github.com/ghostty-org/ghostty`): Source dependency used to build `Frameworks/GhosttyKit.xcframework` and terminal resources.
+- `ThirdParty/ghostty` (`https://github.com/onevcat/ghostty`): Fork carrying embedded-API patches, used to build `Frameworks/GhosttyKit.xcframework` and terminal resources; upgrade procedure in `doc/fork-sync-ghostty.md`.
 - `Resources/git-wt` (`https://github.com/khoi/git-wt.git`): Bundled `wt` CLI used by Maestro Git worktree flows at runtime.
