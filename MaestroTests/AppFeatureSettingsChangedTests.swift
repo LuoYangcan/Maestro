@@ -79,6 +79,8 @@ struct AppFeatureSettingsChangedTests {
     }
     await store.receive(\.repositories.activeAgents.agentEntryChanged) {
       $0.repositories.activeAgents.entries = [entry]
+      $0.repositories.activeAgents.creationSeqBySurfaceID = [entry.surfaceID: 0]
+      $0.repositories.activeAgents.nextCreationSeq = 1
     }
   }
 
@@ -96,6 +98,8 @@ struct AppFeatureSettingsChangedTests {
     await store.send(.terminalEvent(.agentEntryChanged(entry)))
     await store.receive(\.repositories.activeAgents.agentEntryChanged) {
       $0.repositories.activeAgents.entries = [entry]
+      $0.repositories.activeAgents.creationSeqBySurfaceID = [entry.surfaceID: 0]
+      $0.repositories.activeAgents.nextCreationSeq = 1
     }
   }
 

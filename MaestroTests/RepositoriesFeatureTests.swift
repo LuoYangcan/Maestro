@@ -67,6 +67,116 @@ struct RepositoriesFeatureTests {
     }
   }
 
+  @Test func repositoriesLoadedReSortsActiveAgentsAfterBranchRename() async {
+    // Two worktrees that both display as `wt` (their directory's last path component),
+    // so the active-agent order is decided by branch name. A branch rename arrives as a
+    // fresh `repositoriesLoaded`: the entries are unchanged but their displayed branch
+    // names moved, so `state.activeAgents.entries` must re-sort against the new metadata.
+    let worktreeA = makeWorktree(id: "/tmp/repo/a/wt", name: "zzz", repoRoot: "/tmp/repo")
+    let worktreeB = makeWorktree(id: "/tmp/repo/b/wt", name: "mmm", repoRoot: "/tmp/repo")
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [worktreeA, worktreeB])
+
+    let agentA = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/a/wt")
+    let agentB = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/b/wt")
+    var initialState = makeState(repositories: [repository])
+    // Sorted under the original branches: `mmm` (agentB) before `zzz` (agentA).
+    initialState.activeAgents.entries = [agentB, agentA]
+
+    let store = TestStore(initialState: initialState) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.repositoryPersistence.saveRepositorySnapshot = { _ in }
+    }
+
+    // worktreeA's branch is renamed `zzz` → `aaa`, which now sorts ahead of `mmm`.
+    let renamedWorktreeA = makeWorktree(id: "/tmp/repo/a/wt", name: "aaa", repoRoot: "/tmp/repo")
+    let renamedRepository = makeRepository(id: "/tmp/repo", worktrees: [renamedWorktreeA, worktreeB])
+
+    await store.send(
+      .repositoriesLoaded(
+        [renamedRepository],
+        failures: [],
+        roots: [repository.rootURL],
+        animated: false
+      )
+    ) {
+      $0.repositories = [renamedRepository]
+      $0.isInitialLoadComplete = true
+      $0.snapshotPersistencePhase = .active
+      // Re-sorted: agentA (`aaa`) now precedes agentB (`mmm`).
+      $0.activeAgents.entries = [agentA, agentB]
+    }
+    await store.receive(\.delegate.repositoriesChanged)
+    await store.finish()
+  }
+
+  @Test func laterCreatedAgentSortsAfterExistingInSameDisplayGroup() async {
+    // Two agents in the same repository + worktree + branch differ only by creation
+    // order. The child reducer assigns each surface a monotonic sequence on first
+    // appearance; the parent's trailing re-sort then orders the later-created agent
+    // (agentB) after the earlier one (agentA), end to end.
+    let worktree = makeWorktree(id: "/tmp/repo/wt", name: "main", repoRoot: "/tmp/repo")
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [worktree])
+    let agentA = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/wt")
+    let agentB = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/wt")
+    let initialState = makeState(repositories: [repository])
+
+    let store = TestStore(initialState: initialState) {
+      RepositoriesFeature()
+    }
+
+    await store.send(.activeAgents(.agentEntryChanged(agentA, autoShowPanel: false))) {
+      $0.activeAgents.entries = [agentA]
+      $0.activeAgents.creationSeqBySurfaceID = [agentA.surfaceID: 0]
+      $0.activeAgents.nextCreationSeq = 1
+    }
+    // agentB is created after agentA, so the re-sort keeps it behind agentA even though
+    // both share the same display group.
+    await store.send(.activeAgents(.agentEntryChanged(agentB, autoShowPanel: false))) {
+      $0.activeAgents.entries = [agentA, agentB]
+      $0.activeAgents.creationSeqBySurfaceID = [agentA.surfaceID: 0, agentB.surfaceID: 1]
+      $0.activeAgents.nextCreationSeq = 2
+    }
+  }
+
+  @Test func removedAgentSequenceCleanupKeepsRemainingOrder() async {
+    // Three agents share a display group with sequences 0/1/2. Removing the middle one
+    // clears its sequence without rewinding the counter, so the remaining agents (0, 2)
+    // keep their relative order after the parent re-sort.
+    let worktree = makeWorktree(id: "/tmp/repo/wt", name: "main", repoRoot: "/tmp/repo")
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [worktree])
+    let agentA = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/wt")
+    let agentB = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/wt")
+    let agentC = makeActiveAgentEntry(id: UUID(), workingDirectory: "/tmp/repo/wt")
+    let initialState = makeState(repositories: [repository])
+
+    let store = TestStore(initialState: initialState) {
+      RepositoriesFeature()
+    }
+
+    await store.send(.activeAgents(.agentEntryChanged(agentA, autoShowPanel: false))) {
+      $0.activeAgents.entries = [agentA]
+      $0.activeAgents.creationSeqBySurfaceID = [agentA.surfaceID: 0]
+      $0.activeAgents.nextCreationSeq = 1
+    }
+    await store.send(.activeAgents(.agentEntryChanged(agentB, autoShowPanel: false))) {
+      $0.activeAgents.entries = [agentA, agentB]
+      $0.activeAgents.creationSeqBySurfaceID = [agentA.surfaceID: 0, agentB.surfaceID: 1]
+      $0.activeAgents.nextCreationSeq = 2
+    }
+    await store.send(.activeAgents(.agentEntryChanged(agentC, autoShowPanel: false))) {
+      $0.activeAgents.entries = [agentA, agentB, agentC]
+      $0.activeAgents.creationSeqBySurfaceID = [
+        agentA.surfaceID: 0, agentB.surfaceID: 1, agentC.surfaceID: 2,
+      ]
+      $0.activeAgents.nextCreationSeq = 3
+    }
+    await store.send(.activeAgents(.agentEntryRemoved(agentB.id))) {
+      $0.activeAgents.entries = [agentA, agentC]
+      $0.activeAgents.creationSeqBySurfaceID = [agentA.surfaceID: 0, agentC.surfaceID: 2]
+    }
+  }
+
   @Test func customTitlesLoadedReplacesEntireDictionary() async {
     let store = TestStore(initialState: RepositoriesFeature.State()) {
       RepositoriesFeature()
@@ -5041,6 +5151,25 @@ struct RepositoriesFeatureTests {
     state.repositories = IdentifiedArray(uniqueElements: repositories)
     state.repositoryRoots = repositories.map(\.rootURL)
     return state
+  }
+
+  /// An active agent whose displayed repository/worktree/branch resolve from
+  /// `workingDirectory`, so the parent's re-sort exercises the real display path.
+  private func makeActiveAgentEntry(id: UUID, workingDirectory: String) -> ActiveAgentEntry {
+    ActiveAgentEntry(
+      id: id,
+      worktreeID: "owner-\(id.uuidString)",
+      worktreeName: "owner",
+      workingDirectory: URL(fileURLWithPath: workingDirectory),
+      tabID: TerminalTabID(rawValue: UUID()),
+      tabTitle: "agent",
+      surfaceID: id,
+      paneIndex: 0,
+      agent: .codex,
+      rawState: .working,
+      displayState: .working,
+      lastChangedAt: Date(timeIntervalSince1970: 0)
+    )
   }
 
   @Test func loadPersistedRepositoriesStartsFetchesConcurrentlyAndPreservesRootOrder() async {

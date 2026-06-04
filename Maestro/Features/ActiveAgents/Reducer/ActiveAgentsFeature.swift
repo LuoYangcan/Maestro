@@ -21,6 +21,12 @@ struct ActiveAgentsFeature {
     /// Surface that currently has terminal focus, mirrored from `focusChanged` events.
     /// Used as the anchor for keyboard list navigation; not persisted.
     var focusedSurfaceID: UUID?
+    /// Monotonic creation order per surface. Assigned on a surface's first appearance and preserved
+    /// across upserts; used as a sort tier so earlier-created agents stay ahead. Not persisted.
+    var creationSeqBySurfaceID: [UUID: Int] = [:]
+    /// Next creation sequence to hand out. Monotonic, never rewound (removing an agent must not
+    /// reshuffle the relative order of the agents that remain).
+    var nextCreationSeq: Int = 0
     @Shared(.appStorage("activeAgentsPanelHidden")) var isPanelHidden: Bool = false
     @Shared(.appStorage("activeAgentsPanelHeight")) var panelHeight: Double = 200
   }
@@ -41,12 +47,20 @@ struct ActiveAgentsFeature {
       switch action {
       case .agentEntryChanged(let entry, let autoShowPanel):
         state.entries[id: entry.id] = entry
+        if state.creationSeqBySurfaceID[entry.surfaceID] == nil {
+          state.creationSeqBySurfaceID[entry.surfaceID] = state.nextCreationSeq
+          state.nextCreationSeq += 1
+        }
         if autoShowPanel, state.isPanelHidden {
           state.$isPanelHidden.withLock { $0 = false }
         }
         return .none
 
       case .agentEntryRemoved(let id):
+        // `ActiveAgentEntry.id` is the surface's ID (constructed `id: surfaceID`), so the removed
+        // entry's id keys the creation-sequence map directly. Clearing it keeps the map bounded;
+        // `nextCreationSeq` is left untouched so the remaining agents keep their relative order.
+        state.creationSeqBySurfaceID[id] = nil
         state.entries.remove(id: id)
         return .none
 

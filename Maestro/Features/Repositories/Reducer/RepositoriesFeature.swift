@@ -668,6 +668,9 @@ struct RepositoriesFeature {
           )
           state.repositoryRoots = roots
           state.isInitialLoadComplete = true
+          // Branch renames / worktree add-remove arrive here as fresh repositories: the entries are
+          // unchanged but their displayed names may have, so re-sort against the new metadata.
+          resortActiveAgents(state: &state)
           state.loadFailuresByID = Dictionary(
             uniqueKeysWithValues: failures.map { ($0.rootID, $0.message) }
           )
@@ -1256,6 +1259,24 @@ struct RepositoriesFeature {
       Scope(state: \.activeAgents, action: \.activeAgents) {
         ActiveAgentsFeature()
       }
+      // Runs after the child `Scope` has upserted/removed the entry (reducers in a
+      // `CombineReducers` sequence run in declaration order), so it re-sorts the entries the
+      // child just mutated. The branch-rename / worktree-change path goes through
+      // `repositoriesLoaded` in the parent `Reduce` above, which re-sorts inline.
+      //
+      // This Reduce only re-sorts: it is intentionally non-exhaustive over
+      // `ActiveAgentsFeature.Action`. The two listed cases are the only ones that change list
+      // membership/grouping; every other `activeAgents` action (and any future child action)
+      // falls through to `default` and is passed through untouched (no re-sort needed).
+      Reduce { state, action in
+        switch action {
+        case .activeAgents(.agentEntryChanged), .activeAgents(.agentEntryRemoved):
+          resortActiveAgents(state: &state)
+          return .none
+        default:
+          return .none
+        }
+      }
     }
     .ifLet(\.$worktreeCreationPrompt, action: \.worktreeCreationPrompt) {
       WorktreeCreationPromptFeature()
@@ -1482,6 +1503,24 @@ struct RepositoriesFeature {
       }
     }
     return (loaded, failures)
+  }
+
+  /// Re-sorts `state.activeAgents.entries` by displayed repository → worktree → branch so the panel
+  /// and menu-bar lists stay grouped. Lives here because the display names are only resolvable from
+  /// the parent's `repositories` + `repositoryCustomTitles`; the child `ActiveAgentsFeature` can't
+  /// reach them. Repository appearances are omitted: they only colour rows, not the sort keys.
+  func resortActiveAgents(state: inout State) {
+    guard state.activeAgents.entries.count > 1 else { return }
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
+      repositories: state.repositories,
+      customTitles: state.repositoryCustomTitles
+    )
+    state.activeAgents.entries = ActiveAgentEntrySorter.sorted(
+      entries: state.activeAgents.entries,
+      repositories: state.repositories,
+      metadata: metadata,
+      creationSeqBySurfaceID: state.activeAgents.creationSeqBySurfaceID
+    )
   }
 
   func applyRepositories(
