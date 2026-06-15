@@ -46,6 +46,10 @@ struct TerminalClient {
     case setNotificationsEnabled(Bool)
     case setCommandFinishedNotification(enabled: Bool, threshold: Int)
     case setAgentDetectionEnabled(Bool)
+    /// Forces every surface with a detected agent to re-read its live working directory and
+    /// re-emit its `ActiveAgentEntry` immediately, instead of waiting for the next detection poll.
+    /// Surfaces without an agent, and the whole command while detection is disabled, are skipped.
+    case resyncActiveAgents
     case setCanvasMode(Bool)
     case setSelectedWorktreeID(Worktree.ID?)
     case saveLayoutSnapshot

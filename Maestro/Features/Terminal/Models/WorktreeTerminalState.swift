@@ -75,7 +75,7 @@ final class WorktreeTerminalState {
   private var lastClaudeWorkingAtBySurface: [UUID: Date] = [:]
   private var lastEmittedWorkingDirectoryBySurface: [UUID: URL] = [:]
   private var lastAgentDetectionDiagnosticsBySurface: [UUID: String] = [:]
-  private var agentDetectionEnabled = true
+  private(set) var agentDetectionEnabled = true
   var tabIsRunningById: [TerminalTabID: Bool] = [:]
   private var surfaceRunningStartedAtById: [UUID: Date] = [:]
   private var runScriptTabId: TerminalTabID?
@@ -1093,6 +1093,28 @@ final class WorktreeTerminalState {
     } else {
       cleanupAllAgentDetectionState()
     }
+  }
+
+  /// Forces an immediate re-detection for every surface that currently has a detected agent, so a
+  /// manual refresh picks up the agent's live working directory without waiting for the next poll
+  /// tick. Clearing the cached emitted directory guarantees the freshly probed cwd re-emits even
+  /// when only the directory changed. Surfaces without an agent are left untouched (no entry is
+  /// conjured), and the whole pass is skipped while detection is disabled.
+  func resyncActiveAgents() {
+    guard agentDetectionEnabled else { return }
+    for (surfaceID, view) in surfaces {
+      guard surfaceHasDetectedAgent(surfaceID), let tabId = tabId(containing: surfaceID) else { continue }
+      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+      Task { @MainActor [weak self, weak view] in
+        guard let self, let view, self.surfaces[view.id] != nil else { return }
+        await self.detectAgentState(for: view, tabId: tabId)
+      }
+    }
+  }
+
+  private func surfaceHasDetectedAgent(_ surfaceID: UUID) -> Bool {
+    guard let state = surfaceAgentStates[surfaceID] else { return false }
+    return state.detectedAgent != nil && state.state != .unknown
   }
 
   func clearNotificationIndicator() {

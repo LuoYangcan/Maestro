@@ -61,7 +61,9 @@ enum ActiveAgentRowDisplayResolver {
 
   /// Three-tier resolution for the displayed name/branch of a single agent:
   /// 1. `workingDirectory` falls inside a known repo/worktree, so the label tracks live branch
-  ///    renames through `metadata`.
+  ///    renames through `metadata`. When that directory only resolves to an ancestor of the
+  ///    owning worktree (e.g. the agent's cwd sits at the repo root above the tab's worktree),
+  ///    the owning worktree is more specific and wins instead.
   /// 2. `workingDirectory` is known but outside every repo, so derive a name from its last path
   ///    component.
   /// 3. `workingDirectory` is unknown, so fall back to the surface's owning worktree.
@@ -72,11 +74,12 @@ enum ActiveAgentRowDisplayResolver {
   ) -> ActiveAgentRowDisplay {
     if let workingDirectory = entry.workingDirectory {
       if let key = resolveWorktreeID(forWorkingDirectory: workingDirectory, in: repositories) {
+        let displayKey = displayWorktreeID(resolved: key, owning: entry.worktreeID, in: repositories)
         let fallbackName = workingDirectory.lastPathComponent
         return ActiveAgentRowDisplay(
-          titleName: metadata.worktreeDirectoryNamesByWorktreeID[key] ?? fallbackName,
-          branchName: metadata.branchNamesByWorktreeID[key] ?? fallbackName,
-          color: metadata.repositoryColorsByWorktreeID[key]
+          titleName: metadata.worktreeDirectoryNamesByWorktreeID[displayKey] ?? fallbackName,
+          branchName: metadata.branchNamesByWorktreeID[displayKey] ?? fallbackName,
+          color: metadata.repositoryColorsByWorktreeID[displayKey]
         )
       }
       let name = Repository.name(for: workingDirectory)
@@ -87,6 +90,54 @@ enum ActiveAgentRowDisplayResolver {
       branchName: metadata.branchNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
       color: metadata.repositoryColorsByWorktreeID[entry.worktreeID]
     )
+  }
+
+  /// Picks which worktree id to display once the agent's cwd has resolved to `resolved`.
+  /// Falls back to the `owning` worktree when `resolved` is only a strict ancestor of it, since
+  /// the owning worktree (the tab's real worktree) is the more specific location. Keeps `resolved`
+  /// when it is the owner itself, a deeper child, or an unrelated tree (the "agent cd'd into a
+  /// different repo" case must not regress). When either directory can't be looked up there is no
+  /// basis for the comparison, so `resolved` stays.
+  private static func displayWorktreeID(
+    resolved: Worktree.ID,
+    owning: Worktree.ID,
+    in repositories: IdentifiedArrayOf<Repository>
+  ) -> Worktree.ID {
+    guard
+      let ownerDir = directory(forWorktreeID: owning, in: repositories),
+      let resolvedDir = directory(forWorktreeID: resolved, in: repositories)
+    else {
+      return resolved
+    }
+    let resolvedIsStrictAncestor =
+      PathPolicy.contains(ownerDir, in: resolvedDir)
+      && !PathPolicy.contains(resolvedDir, in: ownerDir)
+    return resolvedIsStrictAncestor ? owning : resolved
+  }
+
+  /// Looks up the on-disk directory backing a worktree id. Plain folders are keyed by their
+  /// repository id (directory is the repo root); git repos are matched through their worktrees.
+  ///
+  /// **Invariant**: the keying scheme here (plain-folder → `repository.id`, git → `worktree.id`)
+  /// must stay identical to `worktreeMetadata(...)` and `resolveWorktreeID(forWorkingDirectory:in:)`.
+  /// Changing the key in any one of those three functions without updating the other two will
+  /// silently desync them and produce incorrect ancestor comparisons or missing metadata lookups.
+  private static func directory(
+    forWorktreeID id: Worktree.ID,
+    in repositories: IdentifiedArrayOf<Repository>
+  ) -> URL? {
+    for repository in repositories {
+      if repository.id == id,
+        repository.capabilities.supportsRunnableFolderActions,
+        !repository.capabilities.supportsWorktrees
+      {
+        return repository.rootURL
+      }
+      if let worktree = repository.worktrees[id: id] {
+        return worktree.workingDirectory
+      }
+    }
+    return nil
   }
 
   /// Finds the most specific repo/worktree whose directory contains `workingDirectory`. Plain

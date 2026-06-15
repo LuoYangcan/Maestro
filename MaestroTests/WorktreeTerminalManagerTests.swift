@@ -135,6 +135,71 @@ struct WorktreeTerminalManagerTests {
     #expect(state.surfaceView(for: tabId) == nil)
   }
 
+  @Test func resyncActiveAgentsWithoutStatesDoesNotEmit() {
+    let manager = WorktreeTerminalManager(runtime: GhosttyRuntime())
+
+    // No worktree states exist yet, so the fan-out has nothing to do and must not crash.
+    manager.handleCommand(.resyncActiveAgents)
+  }
+
+  @Test func resyncActiveAgentsSkipsSurfaceWithoutDetectedAgent() throws {
+    let state = WorktreeTerminalState(runtime: GhosttyRuntime(), worktree: makeWorktree())
+    let changed = LockIsolated(0)
+    let removed = LockIsolated(0)
+    state.onAgentEntryChanged = { _ in changed.withValue { $0 += 1 } }
+    state.onAgentEntryRemoved = { _ in removed.withValue { $0 += 1 } }
+
+    // A freshly created surface has no detected agent process, so resync must skip it without
+    // conjuring or removing an entry.
+    _ = try #require(state.createTab())
+    state.resyncActiveAgents()
+
+    #expect(changed.value == 0)
+    #expect(removed.value == 0)
+  }
+
+  @Test func resyncActiveAgentsSkippedWhileDetectionDisabled() throws {
+    let state = WorktreeTerminalState(runtime: GhosttyRuntime(), worktree: makeWorktree())
+    let changed = LockIsolated(0)
+    let removed = LockIsolated(0)
+
+    _ = try #require(state.createTab())
+    state.setAgentDetectionEnabled(false)
+    // Count only what resyncActiveAgents itself emits. Disabling detection legitimately clears
+    // and removes any tracked surface state, so the callbacks are wired up *after* that teardown
+    // to measure the resync in isolation — otherwise the disable's cleanup removal races the
+    // assertion under load and makes the test flaky.
+    state.onAgentEntryChanged = { _ in changed.withValue { $0 += 1 } }
+    state.onAgentEntryRemoved = { _ in removed.withValue { $0 += 1 } }
+
+    state.resyncActiveAgents()
+
+    // Detection is off, so a manual resync must not revive detection or emit/remove anything.
+    #expect(changed.value == 0)
+    #expect(removed.value == 0)
+  }
+
+  @Test func managerResyncGatedByDetectionEnabled() {
+    let manager = WorktreeTerminalManager(runtime: GhosttyRuntime())
+    let worktree = makeWorktree()
+    let state = manager.state(for: worktree)
+    let changed = LockIsolated(0)
+    state.onAgentEntryChanged = { _ in changed.withValue { $0 += 1 } }
+
+    manager.handleCommand(.setAgentDetectionEnabled(false))
+    manager.handleCommand(.resyncActiveAgents)
+
+    // (a) setAgentDetectionEnabled(false) reached the state through the manager fan-out — if it
+    // had stopped at the manager, the state's flag would still be true. The manager flips its own
+    // agentDetectionEnabled in the same call, so this also confirms the manager gate that
+    // resyncActiveAgents guards on is now false (it short-circuits before the state fan-out).
+    #expect(state.agentDetectionEnabled == false)
+    // (b) No entry was emitted. changed == 0 also holds in a fresh state with no detected-agent
+    // surfaces, so on its own it cannot distinguish the gate from the incidental absence of agents
+    // — the agentDetectionEnabled assertion above is what makes the disable observable.
+    #expect(changed.value == 0)
+  }
+
   @Test func notificationIndicatorUsesCurrentCountOnStreamStart() async {
     let manager = WorktreeTerminalManager(runtime: GhosttyRuntime())
     let worktree = makeWorktree()
