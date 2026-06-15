@@ -44,6 +44,58 @@ struct RepositoriesFeatureTests {
     }
   }
 
+  @Test func refreshWorktreesResyncsActiveAgents() async {
+    let worktree = makeWorktree(id: "/tmp/repo/main", name: "main")
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [worktree])
+    let sentCommands = LockIsolated<[TerminalClient.Command]>([])
+    let store = TestStore(initialState: makeState(repositories: [repository])) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.gitClient.worktrees = { _ in [worktree] }
+      $0.terminalClient.send = { command in
+        sentCommands.withValue { $0.append(command) }
+      }
+    }
+
+    await store.send(.refreshWorktrees) {
+      $0.isRefreshingWorktrees = true
+    }
+    await store.receive(\.reloadRepositories)
+    await store.receive(\.repositoriesLoaded) {
+      $0.isRefreshingWorktrees = false
+      $0.isInitialLoadComplete = true
+      $0.snapshotPersistencePhase = .active
+    }
+    await store.finish()
+
+    // Refresh fans out to the terminal layer so detected agents re-read their live cwd, on top of
+    // the existing repository reload.
+    #expect(sentCommands.value == [.resyncActiveAgents])
+  }
+
+  @Test func refreshWorktreesWithoutRootsStillResyncsActiveAgents() async {
+    let sentCommands = LockIsolated<[TerminalClient.Command]>([])
+    let store = TestStore(initialState: RepositoriesFeature.State()) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.terminalClient.send = { command in
+        sentCommands.withValue { $0.append(command) }
+      }
+    }
+
+    await store.send(.refreshWorktrees) {
+      $0.isRefreshingWorktrees = true
+    }
+    await store.receive(\.reloadRepositories) {
+      $0.isRefreshingWorktrees = false
+    }
+    await store.finish()
+
+    // The empty-roots early return still fires the resync — it is a surface-level op independent
+    // of the repository list.
+    #expect(sentCommands.value == [.resyncActiveAgents])
+  }
+
   @Test func repositoriesLoadedClearsRefreshingState() async {
     let worktree = makeWorktree(id: "/tmp/repo/main", name: "main")
     let repository = makeRepository(id: "/tmp/repo", worktrees: [worktree])

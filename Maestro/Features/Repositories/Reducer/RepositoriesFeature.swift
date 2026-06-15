@@ -638,7 +638,10 @@ struct RepositoriesFeature {
 
         case .refreshWorktrees:
           state.isRefreshingWorktrees = true
-          return .send(.reloadRepositories(animated: false))
+          return .merge(
+            .send(.reloadRepositories(animated: false)),
+            .run { _ in await terminalClient.send(.resyncActiveAgents) }
+          )
 
         case .reloadRepositories(let animated):
           state.alert = nil

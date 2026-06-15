@@ -151,29 +151,15 @@ final class WorktreeTerminalManager {
       setCommandFinishedNotification(enabled: enabled, threshold: threshold)
     case .setAgentDetectionEnabled(let enabled):
       setAgentDetectionEnabled(enabled)
+    case .resyncActiveAgents:
+      resyncActiveAgents()
     case .setCanvasMode(let enabled):
       if enabled {
         terminalLogger.info("[CanvasExit] enteringCanvas previousSelectedWorktree=\(selectedWorktreeID ?? "nil")")
         selectedWorktreeID = nil
       }
     case .setSelectedWorktreeID(let id):
-      guard id != selectedWorktreeID else { return }
-      let previousSelectedWorktreeID = selectedWorktreeID
-      let leavingCanvas = previousSelectedWorktreeID == nil
-      if let previousID = previousSelectedWorktreeID, let previousState = states[previousID] {
-        previousState.setAllSurfacesOccluded()
-      } else if leavingCanvas {
-        // Leaving canvas mode: occlude all worktrees except the newly selected one.
-        for (wid, state) in states where wid != id {
-          state.setAllSurfacesOccluded()
-        }
-      }
-      selectedWorktreeID = id
-      terminalLogger.info(
-        "[CanvasExit] setSelectedWorktreeID previous=\(previousSelectedWorktreeID ?? "nil") "
-          + "next=\(id ?? "nil") leavingCanvas=\(leavingCanvas) states=\(states.count)"
-      )
-      terminalLogger.info("Selected worktree \(id ?? "nil")")
+      handleSetSelectedWorktreeID(id)
     case .saveLayoutSnapshot:
       terminalLogger.info("[LayoutRestore] received saveLayoutSnapshot command")
       Task { await persistLayoutSnapshot() }
@@ -185,6 +171,26 @@ final class WorktreeTerminalManager {
     default:
       return
     }
+  }
+
+  private func handleSetSelectedWorktreeID(_ id: String?) {
+    guard id != selectedWorktreeID else { return }
+    let previousSelectedWorktreeID = selectedWorktreeID
+    let leavingCanvas = previousSelectedWorktreeID == nil
+    if let previousID = previousSelectedWorktreeID, let previousState = states[previousID] {
+      previousState.setAllSurfacesOccluded()
+    } else if leavingCanvas {
+      // Leaving canvas mode: occlude all worktrees except the newly selected one.
+      for (wid, state) in states where wid != id {
+        state.setAllSurfacesOccluded()
+      }
+    }
+    selectedWorktreeID = id
+    terminalLogger.info(
+      "[CanvasExit] setSelectedWorktreeID previous=\(previousSelectedWorktreeID ?? "nil") "
+        + "next=\(id ?? "nil") leavingCanvas=\(leavingCanvas) states=\(states.count)"
+    )
+    terminalLogger.info("Selected worktree \(id ?? "nil")")
   }
 
   func eventStream() -> AsyncStream<TerminalClient.Event> {
@@ -447,6 +453,15 @@ final class WorktreeTerminalManager {
     agentDetectionEnabled = enabled
     for state in states.values {
       state.setAgentDetectionEnabled(enabled)
+    }
+  }
+
+  func resyncActiveAgents() {
+    // Honor the global gate so a refresh can't silently revive detection while the panel is
+    // hidden and detection has been turned off.
+    guard agentDetectionEnabled else { return }
+    for state in states.values {
+      state.resyncActiveAgents()
     }
   }
 
