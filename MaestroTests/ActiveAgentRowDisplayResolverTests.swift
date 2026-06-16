@@ -58,6 +58,39 @@ import Testing
     #expect(display.branchName == "repo-b-feature")
   }
 
+  // Agent cwd sits in a sibling worktree of the same repository (neither is an ancestor of the
+  // other). Same repo → the row tracks the tab's owning worktree, not the sibling the agent cd'd to.
+  @Test func workingDirectoryInSiblingWorktreeShowsOwningWorktree() {
+    let repositories = repositoriesWithTwoSiblingWorktrees()
+    let entry = entry(
+      owningWorktreeID: siblingWorktreeAID,
+      owningWorktreeName: "feat-a",
+      workingDirectory: siblingWorktreeBDirectory
+    )
+
+    let display = display(for: entry, repositories: repositories)
+
+    #expect(display.titleName == "feat-a")
+    #expect(display.branchName == "feat-a")
+  }
+
+  // Live repro: the tab owns the repo-root worktree (`main`), but the agent process cd'd into a
+  // nested `.worktrees/...` descendant of the same repo. Same repo → the row must show the owning
+  // (repo-root) worktree, not the nested descendant.
+  @Test func workingDirectoryInDescendantWorktreeShowsOwningWorktree() {
+    let repositories = repositoriesWithMainAndChildWorktree()
+    let entry = entry(
+      owningWorktreeID: "main-worktree",
+      owningWorktreeName: "main",
+      workingDirectory: childWorktreeDirectory
+    )
+
+    let display = display(for: entry, repositories: repositories)
+
+    #expect(display.titleName == repositoryRoot.lastPathComponent)
+    #expect(display.branchName == "main")
+  }
+
   // MARK: - Boundary
 
   // `workingDirectory == nil` → tier 3 fallback to the owning worktree's metadata, unchanged.
@@ -90,8 +123,10 @@ import Testing
     #expect(display.branchName == "memories-page-split")
   }
 
-  // cwd outside every known repo/worktree → tier 2 derives a name from the last path component.
-  @Test func workingDirectoryOutsideAllReposUsesLastPathComponent() {
+  // cwd outside every known repo/worktree (tier 2). A directory that belongs to no repository is
+  // *not* "a different repository", so the row falls back to the tab's owning worktree rather than
+  // deriving a meaningless folder name. (Intentional behavior change: previously showed "Downloads".)
+  @Test func workingDirectoryOutsideAllReposShowsOwningWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let outside = URL(fileURLWithPath: "/Users/someone/Downloads")
     let entry = entry(
@@ -102,8 +137,8 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "Downloads")
-    #expect(display.branchName == "Downloads")
+    #expect(display.titleName == "memories-page-split")
+    #expect(display.branchName == "memories-page-split")
   }
 
   // Owning worktree id cannot be found in `repositories` (deleted/not loaded). With no basis for
@@ -170,6 +205,43 @@ import Testing
     #expect(display.branchName == "Nested Folder")
   }
 
+  // MARK: - Sorter / display consistency
+
+  // The sort key must read from the same worktree the row label shows. In the descendant layout the
+  // label shows the owning (repo-root) worktree, so the sort key's worktree/branch must too — they
+  // can no longer diverge into different ordering groups.
+  @Test func sortKeyMatchesDisplayInDescendantLayout() {
+    let repositories = repositoriesWithMainAndChildWorktree()
+    let entry = entry(
+      owningWorktreeID: "main-worktree",
+      owningWorktreeName: "main",
+      workingDirectory: childWorktreeDirectory
+    )
+
+    let display = display(for: entry, repositories: repositories)
+    let sortKey = sortKey(for: entry, repositories: repositories)
+
+    #expect(sortKey.worktreeName == display.titleName)
+    #expect(sortKey.branchName == display.branchName)
+  }
+
+  // Cross-repo: the agent really moved into a different repository, so both the label and the sort
+  // key use the resolved worktree (repo-b) — still consistent with each other.
+  @Test func sortKeyMatchesDisplayInCrossRepoLayout() {
+    let repositories = repositoriesWithTwoRepos()
+    let entry = entry(
+      owningWorktreeID: repoAWorktreeID,
+      owningWorktreeName: "repo-a-feature",
+      workingDirectory: repoBWorktreeDirectory
+    )
+
+    let display = display(for: entry, repositories: repositories)
+    let sortKey = sortKey(for: entry, repositories: repositories)
+
+    #expect(sortKey.worktreeName == display.titleName)
+    #expect(sortKey.branchName == display.branchName)
+  }
+
   // MARK: - Fixtures
 
   private let repositoryRoot = URL(fileURLWithPath: "/work/today-platform-ios")
@@ -200,6 +272,43 @@ import Testing
           detail: "detail",
           workingDirectory: childWorktreeDirectory,
           repositoryRootURL: repositoryRoot
+        ),
+      ]
+    )
+    return IdentifiedArray(uniqueElements: [repository])
+  }
+
+  private let siblingWorktreeAID = "feat-a-id"
+  private let siblingWorktreeBID = "feat-b-id"
+  private var siblingWorktreeADirectory: URL {
+    URL(fileURLWithPath: "/work/repo/.worktrees/feat-a")
+  }
+  private var siblingWorktreeBDirectory: URL {
+    URL(fileURLWithPath: "/work/repo/.worktrees/feat-b")
+  }
+
+  /// A single git repo with two parallel `.worktrees/` siblings. Neither directory contains the
+  /// other, so the same-repo rule (not an ancestor check) is what makes the owning worktree win.
+  private func repositoriesWithTwoSiblingWorktrees() -> IdentifiedArrayOf<Repository> {
+    let repository = Repository(
+      id: "repo",
+      rootURL: URL(fileURLWithPath: "/work/repo"),
+      name: "repo",
+      kind: .git,
+      worktrees: [
+        Worktree(
+          id: siblingWorktreeAID,
+          name: "feat-a",
+          detail: "detail",
+          workingDirectory: siblingWorktreeADirectory,
+          repositoryRootURL: URL(fileURLWithPath: "/work/repo")
+        ),
+        Worktree(
+          id: siblingWorktreeBID,
+          name: "feat-b",
+          detail: "detail",
+          workingDirectory: siblingWorktreeBDirectory,
+          repositoryRootURL: URL(fileURLWithPath: "/work/repo")
         ),
       ]
     )
@@ -283,6 +392,22 @@ import Testing
       for: entry,
       repositories: repositories,
       metadata: metadata
+    )
+  }
+
+  private func sortKey(
+    for entry: ActiveAgentEntry,
+    repositories: IdentifiedArrayOf<Repository>
+  ) -> ActiveAgentEntrySorter.SortKey {
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
+      repositories: repositories,
+      customTitles: [:]
+    )
+    return ActiveAgentEntrySorter.sortKey(
+      for: entry,
+      repositories: repositories,
+      metadata: metadata,
+      creationSeqBySurfaceID: [:]
     )
   }
 }
