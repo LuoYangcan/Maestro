@@ -8,8 +8,8 @@ import IdentifiedCollections
 /// `creationSeq` (earlier-created first); `surfaceID` is the final deterministic tie-break, used
 /// only as a stability guard so equal keys never reorder between runs.
 enum ActiveAgentEntrySorter {
-  /// The display-derived ordering key for one agent. `repositoryName` is empty when the agent runs
-  /// outside every known repository (the resolver's second tier); equal empty keys still order
+  /// The display-derived ordering key for one agent. `repositoryName` is empty only when the
+  /// resolved (owning-corrected) worktree id has no metadata entry; equal empty keys still order
   /// deterministically through the lower tiers. `creationSeq` is the monotonic first-appearance
   /// order from `ActiveAgentsFeature.State.creationSeqBySurfaceID` (smaller = created earlier).
   struct SortKey: Equatable {
@@ -47,10 +47,11 @@ enum ActiveAgentEntrySorter {
   }
 
   /// Builds the `(repository, worktree, branch, creationSeq)` key for an entry. The three names are
-  /// read from a single resolved worktree key so repository never drifts from the worktree/branch it
-  /// labels — it mirrors `ActiveAgentRowDisplayResolver.display(for:)`'s three-tier resolution.
-  /// `creationSeq` falls back to `Int.max` when the surface is absent from the map so an un-tracked
-  /// agent sorts last within its group rather than jumping ahead (normally every entry is tracked).
+  /// read from the *same* worktree id the row label uses — `ActiveAgentRowDisplayResolver`'s shared
+  /// `displayWorktreeID(for:in:)`, which applies the owning-worktree correction — so the sort group
+  /// can never drift from the label a user sees. `creationSeq` falls back to `Int.max` when the
+  /// surface is absent from the map so an un-tracked agent sorts last within its group rather than
+  /// jumping ahead (normally every entry is tracked).
   static func sortKey(
     for entry: ActiveAgentEntry,
     repositories: IdentifiedArrayOf<Repository>,
@@ -58,33 +59,12 @@ enum ActiveAgentEntrySorter {
     creationSeqBySurfaceID: [UUID: Int]
   ) -> SortKey {
     let creationSeq = creationSeqBySurfaceID[entry.surfaceID] ?? Int.max
-    if let workingDirectory = entry.workingDirectory {
-      if let key = ActiveAgentRowDisplayResolver.resolveWorktreeID(
-        forWorkingDirectory: workingDirectory,
-        in: repositories
-      ) {
-        let fallbackName = workingDirectory.lastPathComponent
-        return SortKey(
-          repositoryName: metadata.repositoryNamesByWorktreeID[key] ?? "",
-          worktreeName: metadata.worktreeDirectoryNamesByWorktreeID[key] ?? fallbackName,
-          branchName: metadata.branchNamesByWorktreeID[key] ?? fallbackName,
-          creationSeq: creationSeq,
-          surfaceID: entry.surfaceID
-        )
-      }
-      let name = Repository.name(for: workingDirectory)
-      return SortKey(
-        repositoryName: "",
-        worktreeName: name,
-        branchName: name,
-        creationSeq: creationSeq,
-        surfaceID: entry.surfaceID
-      )
-    }
+    let key = ActiveAgentRowDisplayResolver.displayWorktreeID(for: entry, in: repositories)
+    let fallbackName = entry.workingDirectory?.lastPathComponent ?? entry.worktreeName
     return SortKey(
-      repositoryName: metadata.repositoryNamesByWorktreeID[entry.worktreeID] ?? "",
-      worktreeName: metadata.worktreeDirectoryNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
-      branchName: metadata.branchNamesByWorktreeID[entry.worktreeID] ?? entry.worktreeName,
+      repositoryName: metadata.repositoryNamesByWorktreeID[key] ?? "",
+      worktreeName: metadata.worktreeDirectoryNamesByWorktreeID[key] ?? fallbackName,
+      branchName: metadata.branchNamesByWorktreeID[key] ?? fallbackName,
       creationSeq: creationSeq,
       surfaceID: entry.surfaceID
     )
