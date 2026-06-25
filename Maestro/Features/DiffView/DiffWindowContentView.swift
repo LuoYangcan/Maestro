@@ -6,6 +6,16 @@ struct DiffWindowContentView: View {
   @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
   @AppStorage("diffViewStyle") private var diffStyleRaw = DiffStyle.split.rawValue
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
+  @FocusState private var isSearchFocused: Bool
+
+  private var isSearching: Bool {
+    !state.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
+  private var searchShortcut: KeyboardShortcut? {
+    AppShortcuts.resolvedShortcut(for: AppShortcuts.CommandID.searchInDiff, in: resolvedKeybindings)?
+      .keyboardShortcut
+  }
 
   private var diffStyle: DiffStyle {
     DiffStyle(rawValue: diffStyleRaw) ?? .split
@@ -29,6 +39,7 @@ struct DiffWindowContentView: View {
     } detail: {
       diffDetail
     }
+    .background(searchFocusShortcut)
     .focusedSceneValue(\.toggleLeftSidebarAction, toggleSidebar)
     .toolbar(id: "diffToolbar") {
       ToolbarItem(id: "sidebarToggle", placement: .navigation) {
@@ -62,15 +73,84 @@ struct DiffWindowContentView: View {
     }
   }
 
+  @ViewBuilder private var searchFocusShortcut: some View {
+    if let searchShortcut {
+      Button("Search in Changes") {
+        if columnVisibility == .detailOnly {
+          columnVisibility = .automatic
+        }
+        isSearchFocused = true
+      }
+      .keyboardShortcut(searchShortcut)
+      .hidden()
+    }
+  }
+
   private func toggleSidebar() {
     withAnimation {
       columnVisibility = columnVisibility == .detailOnly ? .automatic : .detailOnly
     }
   }
 
-  // MARK: - File List
+  // MARK: - Sidebar
 
   private var fileListSidebar: some View {
+    VStack(spacing: 0) {
+      searchField
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+      Divider()
+      if isSearching {
+        DiffSearchResultsView(
+          results: state.searchResults,
+          isLoading: state.isLoadingFiles,
+          onSelect: state.selectMatch,
+        )
+      } else {
+        fileList
+      }
+    }
+  }
+
+  private var searchField: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "magnifyingglass")
+        .foregroundStyle(.secondary)
+        .accessibilityHidden(true)
+      TextField("Search in changes", text: searchQueryBinding)
+        .textFieldStyle(.plain)
+        .focused($isSearchFocused)
+        .help(
+          AppShortcuts.helpText(
+            title: "Search in Changes",
+            commandID: AppShortcuts.CommandID.searchInDiff,
+            in: resolvedKeybindings
+          ))
+      if isSearching {
+        Button {
+          searchQueryBinding.wrappedValue = ""
+        } label: {
+          Image(systemName: "xmark.circle.fill")
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Clear Search")
+        }
+        .buttonStyle(.plain)
+        .help("Clear Search")
+      }
+    }
+  }
+
+  private var searchQueryBinding: Binding<String> {
+    Binding(
+      get: { state.searchQuery },
+      set: { newValue in
+        state.searchQuery = newValue
+        state.scheduleSearch()
+      },
+    )
+  }
+
+  private var fileList: some View {
     List(selection: selectedFileID) {
       ForEach(state.changedFiles) { file in
         FileRowView(file: file)

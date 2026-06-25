@@ -11,8 +11,12 @@ final class DiffWindowState {
   var diffDocument: DiffDocument?
   var isLoadingFiles = false
 
+  var searchQuery: String = ""
+  var searchResults: [DiffSearchMatch] = []
+
   private var documentCache: [String: DiffDocument] = [:]
   private var loadTask: Task<Void, Never>?
+  private var searchTask: Task<Void, Never>?
 
   func load(worktreeURL: URL, branchName: String) {
     self.worktreeURL = worktreeURL
@@ -21,6 +25,8 @@ final class DiffWindowState {
     selectedFile = nil
     diffDocument = nil
     documentCache = [:]
+    searchTask?.cancel()
+    searchTask = nil
     loadTask?.cancel()
     loadTask = Task { await loadAllFiles(worktreeURL: worktreeURL) }
   }
@@ -28,6 +34,8 @@ final class DiffWindowState {
   func refresh() {
     guard let worktreeURL else { return }
     documentCache = [:]
+    searchTask?.cancel()
+    searchTask = nil
     loadTask?.cancel()
     loadTask = Task { await loadAllFiles(worktreeURL: worktreeURL) }
   }
@@ -36,6 +44,59 @@ final class DiffWindowState {
     guard selectedFile != file else { return }
     selectedFile = file
     diffDocument = documentCache[file.id]
+  }
+
+  // MARK: - Search
+
+  /// Debounce window before a typed query triggers a full re-scan.
+  private static let searchDebounce: Duration = .milliseconds(200)
+
+  /// Schedules a debounced re-scan for the current `searchQuery`, so rapid
+  /// typing doesn't re-scan every changed file's full text on every keystroke.
+  /// Clearing the query resolves immediately.
+  func scheduleSearch() {
+    searchTask?.cancel()
+    if searchQuery.isEmpty {
+      searchTask = nil
+      updateSearchResults()
+      return
+    }
+    searchTask = Task { @MainActor in
+      try? await ContinuousClock().sleep(for: Self.searchDebounce)
+      guard !Task.isCancelled else { return }
+      updateSearchResults()
+    }
+  }
+
+  /// Runs the cross-file search for the current `searchQuery`, updating
+  /// `searchResults`. An empty query clears the results. Called by the debounced
+  /// `scheduleSearch` and directly after the cache rebuilds.
+  func updateSearchResults() {
+    searchResults = DiffSearchEngine.search(query: searchQuery, in: searchableFiles())
+  }
+
+  /// File-level jump (risk-2): select the file the match belongs to so the diff
+  /// renders from the top with the sidebar selection synced. A `fileID` that no
+  /// longer maps to a changed file (cache rebuilt) is a safe no-op.
+  func selectMatch(_ match: DiffSearchMatch) {
+    guard let file = changedFiles.first(where: { $0.id == match.fileID }) else { return }
+    selectFile(file)
+  }
+
+  /// Assembles the searchable contents from `changedFiles` + the private cache.
+  /// Files whose documents are not yet loaded are skipped (returns what is
+  /// currently available), so searching mid-load returns partial / empty
+  /// results without crashing.
+  private func searchableFiles() -> [DiffSearchableFile] {
+    changedFiles.compactMap { file in
+      guard let diffFile = documentCache[file.id]?.files?.first else { return nil }
+      return DiffSearchableFile(
+        fileID: file.id,
+        displayName: file.displayName,
+        oldContents: diffFile.oldContents,
+        newContents: diffFile.newContents,
+      )
+    }
   }
 
   // MARK: - Private
@@ -66,6 +127,12 @@ final class DiffWindowState {
     } else {
       selectedFile = nil
       diffDocument = nil
+    }
+
+    // Cache rebuilt: re-run any active search so results never reference
+    // file IDs that no longer exist.
+    if !searchQuery.isEmpty {
+      updateSearchResults()
     }
   }
 

@@ -101,6 +101,7 @@ enum AppShortcuts {
     static let stopScript = "stop_script"
     static let checkForUpdates = "check_for_updates"
     static let showDiff = "show_diff"
+    static let searchInDiff = "search_in_diff"
     static let toggleCanvas = "toggle_canvas"
     static let toggleShelf = "toggle_shelf"
     static let selectNextShelfBook = "select_next_shelf_book"
@@ -196,6 +197,7 @@ enum AppShortcuts {
   static let stopRunScript = AppShortcut(key: ".", modifiers: .command)
   static let checkForUpdates = AppShortcut(key: "u", modifiers: [.command, .shift])
   static let showDiff = AppShortcut(key: "y", modifiers: [.command, .shift])
+  static let searchInDiff = AppShortcut(key: "f", modifiers: [.command])
   static let toggleCanvas = AppShortcut(
     keyEquivalent: .return, ghosttyKeyName: "return", modifiers: [.command, .option]
   )
@@ -738,6 +740,12 @@ enum AppShortcuts {
       title: "Quit Application",
       scope: .systemFixedAppAction,
       shortcut: quitApplication
+    ),
+    .init(
+      id: CommandID.searchInDiff,
+      title: "Search in Changes",
+      scope: .localInteraction,
+      shortcut: searchInDiff
     ),
     .init(
       id: CommandID.renameBranch,
