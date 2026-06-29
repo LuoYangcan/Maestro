@@ -1050,6 +1050,20 @@ struct CommandPaletteFeatureTests {
     )
   }
 
+  @Test func fuzzyMatchesCompressedCamelQuery() {
+    let item = makeItem(
+      id: "global.change-focused-tab-icon",
+      title: "Change Focused Tab Icon",
+      subtitle: nil,
+      kind: .changeFocusedTabIcon("wt-1")
+    )
+
+    expectNoDifference(
+      CommandPaletteFeature.filterItems(items: [item], query: "cfti"),
+      [item]
+    )
+  }
+
   @Test func commandPaletteDraftActionRanksFirst() {
     let rootPath = "/tmp/repo"
     let worktree = makeWorktree(id: "\(rootPath)/wt-draft", name: "draft", repoRoot: rootPath)
