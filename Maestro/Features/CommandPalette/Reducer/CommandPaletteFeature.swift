@@ -1230,21 +1230,8 @@ private func saveRecency(_ recencyByItemID: [CommandPaletteItem.ID: TimeInterval
 }
 
 private struct CommandPaletteFuzzyScorer {
-  private struct PreparedQueryPiece {
-    let normalized: String
-    let normalizedLowercase: String
-    let expectContiguousMatch: Bool
-  }
-
-  private struct PreparedQuery {
-    let piece: PreparedQueryPiece
-    let values: [PreparedQueryPiece]?
-  }
-
-  private struct Match {
-    var start: Int
-    var end: Int
-  }
+  private typealias PreparedQueryPiece = FuzzySearchScorer.QueryPiece
+  private typealias Match = FuzzySearchScorer.Match
 
   private struct ItemScore {
     var score: Int
@@ -1262,8 +1249,8 @@ private struct CommandPaletteFuzzyScorer {
   private static let labelPrefixScoreThreshold = 1 << 17
   private static let labelScoreThreshold = 1 << 16
 
-  private let query: PreparedQuery
-  private let allowNonContiguousMatches: Bool
+  private let fuzzyScorer: FuzzySearchScorer
+  private var query: FuzzySearchScorer.PreparedQuery { fuzzyScorer.preparedQuery }
   private let recencyByID: [CommandPaletteItem.ID: TimeInterval]
   private let now: Date
 
@@ -1273,8 +1260,7 @@ private struct CommandPaletteFuzzyScorer {
     now: Date,
     allowNonContiguousMatches: Bool = true
   ) {
-    self.query = Self.prepareQuery(query)
-    self.allowNonContiguousMatches = allowNonContiguousMatches
+    fuzzyScorer = FuzzySearchScorer(query: query, allowNonContiguousMatches: allowNonContiguousMatches)
     self.recencyByID = recencyByID
     self.now = now
   }
@@ -1343,8 +1329,8 @@ private struct CommandPaletteFuzzyScorer {
 
     return ItemScore(
       score: totalScore,
-      labelMatch: normalizeMatches(totalLabelMatches),
-      descriptionMatch: normalizeMatches(totalDescriptionMatches)
+      labelMatch: FuzzySearchScorer.normalizeMatches(totalLabelMatches),
+      descriptionMatch: FuzzySearchScorer.normalizeMatches(totalDescriptionMatches)
     )
   }
 
@@ -1377,13 +1363,8 @@ private struct CommandPaletteFuzzyScorer {
     description: String?,
     query: PreparedQueryPiece
   ) -> ItemScore {
-    let (labelScore, labelPositions) = scoreFuzzy(
-      target: label,
-      query: query,
-      allowNonContiguousMatches: allowNonContiguousMatches && !query.expectContiguousMatch
-    )
-    if labelScore > 0 {
-      let labelPrefixMatch = matchesPrefix(query: query.normalizedLowercase, target: label)
+    if let labelScore = fuzzyScorer.score(target: label, piece: query) {
+      let labelPrefixMatch = fuzzyScorer.prefixMatches(for: query, in: label)
       let baseScore: Int
       if let labelPrefixMatch {
         let prefixLengthBoost = Int(
@@ -1391,15 +1372,15 @@ private struct CommandPaletteFuzzyScorer {
         )
         baseScore = Self.labelPrefixScoreThreshold + prefixLengthBoost
         return ItemScore(
-          score: baseScore + labelScore,
+          score: baseScore + labelScore.score,
           labelMatch: labelPrefixMatch,
           descriptionMatch: nil
         )
       }
       baseScore = Self.labelScoreThreshold
       return ItemScore(
-        score: baseScore + labelScore,
-        labelMatch: createMatches(labelPositions),
+        score: baseScore + labelScore.score,
+        labelMatch: labelScore.matches,
         descriptionMatch: nil
       )
     }
@@ -1407,13 +1388,8 @@ private struct CommandPaletteFuzzyScorer {
     if let description {
       let descriptionPrefixLength = description.count
       let descriptionAndLabel = description + label
-      let (labelDescriptionScore, labelDescriptionPositions) = scoreFuzzy(
-        target: descriptionAndLabel,
-        query: query,
-        allowNonContiguousMatches: allowNonContiguousMatches && !query.expectContiguousMatch
-      )
-      if labelDescriptionScore > 0 {
-        let labelDescriptionMatches = createMatches(labelDescriptionPositions)
+      if let labelDescriptionScore = fuzzyScorer.score(target: descriptionAndLabel, piece: query) {
+        let labelDescriptionMatches = labelDescriptionScore.matches
         var labelMatch: [Match] = []
         var descriptionMatch: [Match] = []
 
@@ -1434,7 +1410,7 @@ private struct CommandPaletteFuzzyScorer {
         }
 
         return ItemScore(
-          score: labelDescriptionScore,
+          score: labelDescriptionScore.score,
           labelMatch: labelMatch,
           descriptionMatch: descriptionMatch
         )
@@ -1585,325 +1561,5 @@ private struct CommandPaletteFuzzyScorer {
 
   private func recencyScore(for item: CommandPaletteItem) -> Double {
     commandPaletteRecencyScore(item, recencyByID: recencyByID, now: now)
-  }
-
-  private func scoreFuzzy(
-    target: String,
-    query: PreparedQueryPiece,
-    allowNonContiguousMatches: Bool
-  ) -> (Int, [Int]) {
-    if target.isEmpty || query.normalized.isEmpty {
-      return (0, [])
-    }
-
-    let targetChars = Array(target)
-    let queryChars = Array(query.normalized)
-
-    if targetChars.count < queryChars.count {
-      return (0, [])
-    }
-
-    let targetLower = Array(target.lowercased())
-    let queryLower = Array(query.normalizedLowercase)
-
-    return doScoreFuzzy(
-      query: queryChars,
-      queryLower: queryLower,
-      target: targetChars,
-      targetLower: targetLower,
-      allowNonContiguousMatches: allowNonContiguousMatches
-    )
-  }
-
-  private func doScoreFuzzy(
-    query: [Character],
-    queryLower: [Character],
-    target: [Character],
-    targetLower: [Character],
-    allowNonContiguousMatches: Bool
-  ) -> (Int, [Int]) {
-    let queryLength = query.count
-    let targetLength = target.count
-    let scores = Array(repeating: 0, count: queryLength * targetLength)
-    var mutableScores = scores
-    let matches = Array(repeating: 0, count: queryLength * targetLength)
-    var mutableMatches = matches
-
-    for queryIndex in 0..<queryLength {
-      let queryIndexOffset = queryIndex * targetLength
-      let queryIndexPreviousOffset = queryIndexOffset - targetLength
-      let queryIndexGtNull = queryIndex > 0
-
-      let queryCharAtIndex = query[queryIndex]
-      let queryLowerCharAtIndex = queryLower[queryIndex]
-
-      for targetIndex in 0..<targetLength {
-        let targetIndexGtNull = targetIndex > 0
-
-        let currentIndex = queryIndexOffset + targetIndex
-        let leftIndex = currentIndex - 1
-        let diagIndex = queryIndexPreviousOffset + targetIndex - 1
-
-        let leftScore = targetIndexGtNull ? mutableScores[leftIndex] : 0
-        let diagScore = queryIndexGtNull && targetIndexGtNull ? mutableScores[diagIndex] : 0
-
-        let matchesSequenceLength =
-          queryIndexGtNull && targetIndexGtNull ? mutableMatches[diagIndex] : 0
-
-        let score: Int
-        let scoreContext = CharScoreContext(
-          queryChar: queryCharAtIndex,
-          queryLowerChar: queryLowerCharAtIndex,
-          target: target,
-          targetLower: targetLower,
-          targetIndex: targetIndex,
-          matchesSequenceLength: matchesSequenceLength
-        )
-        if diagScore != 0 && queryIndexGtNull {
-          score = computeCharScore(scoreContext)
-        } else if queryIndexGtNull {
-          score = 0
-        } else {
-          score = computeCharScore(scoreContext)
-        }
-
-        let isValidScore = score > 0 && diagScore + score >= leftScore
-
-        if isValidScore
-          && (allowNonContiguousMatches || queryIndexGtNull
-            || startsWith(
-              targetLower,
-              queryLower,
-              at: targetIndex
-            ))
-        {
-          mutableMatches[currentIndex] = matchesSequenceLength + 1
-          mutableScores[currentIndex] = diagScore + score
-        } else {
-          mutableMatches[currentIndex] = 0
-          mutableScores[currentIndex] = leftScore
-        }
-      }
-    }
-
-    var positions: [Int] = []
-    var queryIndex = queryLength - 1
-    var targetIndex = targetLength - 1
-    while queryIndex >= 0 && targetIndex >= 0 {
-      let currentIndex = queryIndex * targetLength + targetIndex
-      let match = mutableMatches[currentIndex]
-      if match == 0 {
-        targetIndex -= 1
-      } else {
-        positions.append(targetIndex)
-        queryIndex -= 1
-        targetIndex -= 1
-      }
-    }
-
-    positions.reverse()
-    let finalScore = mutableScores[queryLength * targetLength - 1]
-    return (finalScore, positions)
-  }
-
-  private struct CharScoreContext {
-    let queryChar: Character
-    let queryLowerChar: Character
-    let target: [Character]
-    let targetLower: [Character]
-    let targetIndex: Int
-    let matchesSequenceLength: Int
-  }
-
-  private func computeCharScore(_ context: CharScoreContext) -> Int {
-    if !considerAsEqual(context.queryLowerChar, context.targetLower[context.targetIndex]) {
-      return 0
-    }
-
-    var score = 1
-
-    if context.matchesSequenceLength > 0 {
-      score += (min(context.matchesSequenceLength, 3) * 6)
-      score += max(0, context.matchesSequenceLength - 3) * 3
-    }
-
-    if context.queryChar == context.target[context.targetIndex] {
-      score += 1
-    }
-
-    if context.targetIndex == 0 {
-      score += 8
-    } else {
-      let separatorBonus = scoreSeparatorAtPos(context.target[context.targetIndex - 1])
-      if separatorBonus > 0 {
-        score += separatorBonus
-      } else if isUpper(context.target[context.targetIndex]) && context.matchesSequenceLength == 0 {
-        score += 2
-      }
-    }
-
-    return score
-  }
-
-  private func considerAsEqual(_ lhs: Character, _ rhs: Character) -> Bool {
-    if lhs == rhs {
-      return true
-    }
-    if lhs == "/" || lhs == "\\" {
-      return rhs == "/" || rhs == "\\"
-    }
-    return false
-  }
-
-  private func scoreSeparatorAtPos(_ char: Character) -> Int {
-    switch char {
-    case "/", "\\":
-      return 5
-    case "_", "-", ".", " ", "'", "\"", ":":
-      return 4
-    default:
-      return 0
-    }
-  }
-
-  private func isUpper(_ char: Character) -> Bool {
-    guard let scalar = String(char).unicodeScalars.first else { return false }
-    return scalar.properties.isUppercase
-  }
-
-  private func startsWith(
-    _ target: [Character],
-    _ query: [Character],
-    at index: Int
-  ) -> Bool {
-    guard index + query.count <= target.count else { return false }
-    for queryIndex in 0..<query.count where target[index + queryIndex] != query[queryIndex] {
-      return false
-    }
-    return true
-  }
-
-  private func createMatches(_ offsets: [Int]) -> [Match] {
-    var matches: [Match] = []
-    var lastMatch: Match?
-
-    for position in offsets {
-      if var lastMatch, lastMatch.end == position {
-        lastMatch.end += 1
-        matches[matches.count - 1] = lastMatch
-      } else {
-        let match = Match(start: position, end: position + 1)
-        matches.append(match)
-        lastMatch = match
-      }
-    }
-
-    return matches
-  }
-
-  private func normalizeMatches(_ matches: [Match]) -> [Match]? {
-    guard !matches.isEmpty else { return nil }
-
-    let sortedMatches = matches.sorted { $0.start < $1.start }
-    var normalizedMatches: [Match] = []
-    var currentMatch: Match?
-
-    for match in sortedMatches {
-      if let existing = currentMatch, matchOverlaps(existing, match) {
-        let merged = Match(
-          start: min(existing.start, match.start),
-          end: max(existing.end, match.end)
-        )
-        currentMatch = merged
-        normalizedMatches[normalizedMatches.count - 1] = merged
-      } else {
-        currentMatch = match
-        normalizedMatches.append(match)
-      }
-    }
-
-    return normalizedMatches
-  }
-
-  private func matchOverlaps(_ matchA: Match, _ matchB: Match) -> Bool {
-    if matchA.end < matchB.start {
-      return false
-    }
-    if matchB.end < matchA.start {
-      return false
-    }
-    return true
-  }
-
-  private func matchesPrefix(query: String, target: String) -> [Match]? {
-    let targetLower = target.lowercased()
-    guard targetLower.hasPrefix(query) else { return nil }
-    return [Match(start: 0, end: query.count)]
-  }
-
-  private static func prepareQuery(_ original: String) -> PreparedQuery {
-    let expectContiguousMatch = queryExpectsExactMatch(original)
-    let normalized = normalizeQuery(original)
-    let piece = PreparedQueryPiece(
-      normalized: normalized.normalized,
-      normalizedLowercase: normalized.normalizedLowercase,
-      expectContiguousMatch: expectContiguousMatch
-    )
-
-    let splitPieces = original.split(separator: " ")
-    var values: [PreparedQueryPiece] = []
-    if splitPieces.count > 1 {
-      for pieceValue in splitPieces {
-        let value = String(pieceValue)
-        let expectExactMatchPiece = queryExpectsExactMatch(value)
-        let normalizedPiece = normalizeQuery(value)
-        if normalizedPiece.normalized.isEmpty {
-          continue
-        }
-        values.append(
-          PreparedQueryPiece(
-            normalized: normalizedPiece.normalized,
-            normalizedLowercase: normalizedPiece.normalizedLowercase,
-            expectContiguousMatch: expectExactMatchPiece
-          )
-        )
-      }
-    }
-
-    return PreparedQuery(
-      piece: piece,
-      values: values.isEmpty ? nil : values
-    )
-  }
-
-  private static func normalizeQuery(_ original: String) -> (normalized: String, normalizedLowercase: String) {
-    var pathNormalized = String()
-    pathNormalized.reserveCapacity(original.count)
-    for char in original {
-      if char == "\\" {
-        pathNormalized.append("/")
-      } else {
-        pathNormalized.append(char)
-      }
-    }
-
-    var normalized = String()
-    normalized.reserveCapacity(pathNormalized.count)
-    for char in pathNormalized {
-      if char == "*" || char == "…" || char == "\"" || char.isWhitespace {
-        continue
-      }
-      normalized.append(char)
-    }
-
-    if normalized.count > 1, normalized.hasSuffix("#") {
-      normalized.removeLast()
-    }
-
-    return (normalized, normalized.lowercased())
-  }
-
-  private static func queryExpectsExactMatch(_ query: String) -> Bool {
-    query.hasPrefix("\"") && query.hasSuffix("\"")
   }
 }
