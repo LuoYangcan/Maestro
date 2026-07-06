@@ -4,7 +4,6 @@ import YiTong
 struct DiffWindowContentView: View {
   var state: DiffWindowState
   @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
-  @State private var fileSearchQuery = ""
   @AppStorage("diffViewStyle") private var diffStyleRaw = DiffStyle.split.rawValue
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
   @FocusState private var isSearchFocused: Bool
@@ -20,14 +19,6 @@ struct DiffWindowContentView: View {
 
   private var diffStyle: DiffStyle {
     DiffStyle(rawValue: diffStyleRaw) ?? .split
-  }
-
-  private var searchedFiles: [DiffChangedFile] {
-    DiffChangedFileSearch.rankedFiles(state.changedFiles, query: fileSearchQuery)
-  }
-
-  private var isSearchingFiles: Bool {
-    !fileSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   private var selectedFileID: Binding<String?> {
@@ -109,14 +100,20 @@ struct DiffWindowContentView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
       Divider()
-      if isSearching {
+      switch state.sidebarContent {
+      case .allFiles(let files), .filteredFiles(let files):
+        fileList(files: files)
+      case .contentMatches(let results):
         DiffSearchResultsView(
-          results: state.searchResults,
-          isLoading: state.isLoadingFiles,
+          results: results,
           onSelect: state.selectMatch,
         )
-      } else {
-        fileList
+      case .noResults:
+        ContentUnavailableView(
+          "No Results",
+          systemImage: "magnifyingglass",
+          description: Text("No changes or files match your search"),
+        )
       }
     }
   }
@@ -159,15 +156,14 @@ struct DiffWindowContentView: View {
     )
   }
 
-  private var fileList: some View {
+  private func fileList(files: [DiffChangedFile]) -> some View {
     List(selection: selectedFileID) {
-      ForEach(searchedFiles) { file in
+      ForEach(files) { file in
         FileRowView(file: file)
           .tag(file.id)
       }
     }
     .listStyle(.sidebar)
-    .searchable(text: $fileSearchQuery, placement: .sidebar, prompt: "Search Files")
     .overlay {
       if state.isLoadingFiles && state.changedFiles.isEmpty {
         ProgressView()
@@ -177,8 +173,6 @@ struct DiffWindowContentView: View {
           systemImage: "checkmark.circle",
           description: Text("Working directory is clean"),
         )
-      } else if isSearchingFiles && searchedFiles.isEmpty {
-        ContentUnavailableView.search(text: fileSearchQuery)
       }
     }
   }

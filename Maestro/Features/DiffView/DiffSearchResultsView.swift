@@ -1,23 +1,19 @@
 import SwiftUI
 
 /// The match list shown in the sidebar while a search query is active.
+///
+/// Only rendered for `DiffSidebarContent.contentMatches`, which the state
+/// emits solely when there are matches or a load is still in flight — so an
+/// empty `results` set here always means "still loading". The genuine
+/// "no matches" state is owned by `DiffSidebarContent.noResults` upstream.
 struct DiffSearchResultsView: View {
   let results: [DiffSearchMatch]
-  let isLoading: Bool
   let onSelect: (DiffSearchMatch) -> Void
 
   var body: some View {
     if results.isEmpty {
-      if isLoading {
-        ContentUnavailableView {
-          Label("Loading Changes…", systemImage: "arrow.triangle.2.circlepath")
-        }
-      } else {
-        ContentUnavailableView(
-          "No Results",
-          systemImage: "magnifyingglass",
-          description: Text("No changes match your search"),
-        )
+      ContentUnavailableView {
+        Label("Loading Changes…", systemImage: "arrow.triangle.2.circlepath")
       }
     } else {
       List {

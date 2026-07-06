@@ -1,6 +1,13 @@
 import Foundation
 import YiTong
 
+nonisolated enum DiffSidebarContent: Equatable {
+  case allFiles([DiffChangedFile])
+  case contentMatches([DiffSearchMatch])
+  case filteredFiles([DiffChangedFile])
+  case noResults
+}
+
 @Observable
 @MainActor
 final class DiffWindowState {
@@ -13,6 +20,20 @@ final class DiffWindowState {
 
   var searchQuery: String = ""
   var searchResults: [DiffSearchMatch] = []
+
+  var sidebarContent: DiffSidebarContent {
+    let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedQuery.isEmpty else { return .allFiles(changedFiles) }
+
+    if isLoadingFiles || !searchResults.isEmpty {
+      return .contentMatches(searchResults)
+    }
+
+    guard !changedFiles.isEmpty else { return .allFiles(changedFiles) }
+
+    let filteredFiles = DiffChangedFileSearch.rankedFiles(changedFiles, query: trimmedQuery)
+    return filteredFiles.isEmpty ? .noResults : .filteredFiles(filteredFiles)
+  }
 
   private var documentCache: [String: DiffDocument] = [:]
   private var loadTask: Task<Void, Never>?
