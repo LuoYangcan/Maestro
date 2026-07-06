@@ -208,7 +208,7 @@ struct WorktreeTerminalManagerTests {
         ForegroundJob(
           processGroupID: 123,
           processes: [
-            ForegroundProcess(pid: 456, name: "claude", argv0: "claude", cmdline: "claude"),
+            ForegroundProcess(pid: 456, name: "claude", argv0: "claude", cmdline: "claude")
           ]
         )
       },
