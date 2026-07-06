@@ -200,6 +200,63 @@ struct WorktreeTerminalManagerTests {
     #expect(changed.value == 0)
   }
 
+  @Test func resyncActiveAgentsResamplesWorkingDirectoryAndReemitsEntry() async throws {
+    let worktree = makeWorktree(id: "/tmp/repo/main", name: "main")
+    let processDirectory = LockIsolated(worktree.workingDirectory.path(percentEncoded: false))
+    let provider = AgentProcessSnapshotProvider(
+      foregroundJob: { _, _ in
+        ForegroundJob(
+          processGroupID: 123,
+          processes: [
+            ForegroundProcess(pid: 456, name: "claude", argv0: "claude", cmdline: "claude"),
+          ]
+        )
+      },
+      processCurrentDirectory: { _ in processDirectory.value }
+    )
+    let state = WorktreeTerminalState(
+      runtime: GhosttyRuntime(),
+      worktree: worktree,
+      agentProcessSnapshotProvider: provider
+    )
+    state.setAgentDetectionEnabled(false)
+    let recorder = AgentEntryRecorder()
+    state.onAgentEntryChanged = { entry in
+      recorder.append(entry)
+    }
+    let tabID = try #require(state.createTab())
+    let surfaceID = try #require(state.focusedSurfaceId(in: tabID))
+
+    state.seedAgentDetectionForTesting(
+      surfaceID: surfaceID,
+      state: PaneAgentState(
+        detectedAgent: .claude,
+        fallbackState: .idle,
+        state: .idle,
+        seen: true,
+        lastChangedAt: Date(timeIntervalSince1970: 0)
+      ),
+      emittedWorkingDirectory: worktree.workingDirectory
+    )
+    state.setAgentDetectionEnabledForTesting(true)
+
+    let newDirectory = URL(fileURLWithPath: "/tmp/repo/active-agents-worktree-branch", isDirectory: true)
+      .standardizedFileURL
+    processDirectory.withValue { $0 = newDirectory.path(percentEncoded: false) }
+
+    await state.resyncActiveAgentsForTesting()
+    let secondEntry = try #require(
+      recorder.entry(
+        surfaceID: surfaceID,
+        workingDirectory: newDirectory
+      )
+    )
+
+    #expect(secondEntry.id == surfaceID)
+    #expect(secondEntry.worktreeID == worktree.id)
+    #expect(secondEntry.workingDirectory == newDirectory)
+  }
+
   @Test func notificationIndicatorUsesCurrentCountOnStreamStart() async {
     let manager = WorktreeTerminalManager(runtime: GhosttyRuntime())
     let worktree = makeWorktree()
@@ -601,4 +658,20 @@ struct WorktreeTerminalManagerTests {
     )
   }
 
+}
+
+@MainActor
+private final class AgentEntryRecorder {
+  private var entries: [ActiveAgentEntry] = []
+
+  func append(_ entry: ActiveAgentEntry) {
+    entries.append(entry)
+  }
+
+  func entry(surfaceID: UUID, workingDirectory: URL) -> ActiveAgentEntry? {
+    let standardizedDirectory = workingDirectory.standardizedFileURL
+    return entries.first {
+      $0.id == surfaceID && $0.workingDirectory == standardizedDirectory
+    }
+  }
 }

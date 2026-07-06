@@ -48,10 +48,9 @@ enum ActiveAgentEntrySorter {
 
   /// Builds the `(repository, worktree, branch, creationSeq)` key for an entry. The three names are
   /// read from the *same* worktree id the row label uses — `ActiveAgentRowDisplayResolver`'s shared
-  /// `displayWorktreeID(for:in:)`, which applies the owning-worktree correction — so the sort group
-  /// can never drift from the label a user sees. `creationSeq` falls back to `Int.max` when the
-  /// surface is absent from the map so an un-tracked agent sorts last within its group rather than
-  /// jumping ahead (normally every entry is tracked).
+  /// `displayWorktreeID(for:in:)` — so the sort group can never drift from the label a user sees.
+  /// `creationSeq` falls back to `Int.max` when the surface is absent from the map so it sorts last
+  /// rather than jumping ahead (normally every entry is tracked).
   static func sortKey(
     for entry: ActiveAgentEntry,
     repositories: IdentifiedArrayOf<Repository>,
@@ -60,7 +59,7 @@ enum ActiveAgentEntrySorter {
   ) -> SortKey {
     let creationSeq = creationSeqBySurfaceID[entry.surfaceID] ?? Int.max
     let key = ActiveAgentRowDisplayResolver.displayWorktreeID(for: entry, in: repositories)
-    let fallbackName = entry.workingDirectory?.lastPathComponent ?? entry.worktreeName
+    let fallbackName = ActiveAgentRowDisplayResolver.fallbackName(for: entry, displayWorktreeID: key)
     return SortKey(
       repositoryName: metadata.repositoryNamesByWorktreeID[key] ?? "",
       worktreeName: metadata.worktreeDirectoryNamesByWorktreeID[key] ?? fallbackName,

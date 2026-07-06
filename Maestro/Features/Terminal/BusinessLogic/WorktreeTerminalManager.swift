@@ -11,6 +11,7 @@ private let layoutRestoreFailureMessage = "Saved terminal layout was invalid and
 final class WorktreeTerminalManager {
   private let runtime: GhosttyRuntime?
   private let layoutPersistence: TerminalLayoutPersistenceClient
+  private let agentProcessSnapshotProvider: AgentProcessSnapshotProvider
   private var states: [Worktree.ID: WorktreeTerminalState] = [:]
   private var notificationsEnabled = true
   private var commandFinishedNotificationEnabled = true
@@ -29,10 +30,12 @@ final class WorktreeTerminalManager {
   init(
     runtime: GhosttyRuntime,
     preferredFontSize: Float32? = nil,
-    layoutPersistence: TerminalLayoutPersistenceClient = .liveValue
+    layoutPersistence: TerminalLayoutPersistenceClient = .liveValue,
+    agentProcessSnapshotProvider: AgentProcessSnapshotProvider = .live
   ) {
     self.runtime = runtime
     self.layoutPersistence = layoutPersistence
+    self.agentProcessSnapshotProvider = agentProcessSnapshotProvider
     self.preferredFontSize = preferredFontSize
     baselineFontSize = runtime.defaultFontSize()
   }
@@ -228,7 +231,8 @@ final class WorktreeTerminalManager {
       runtime: runtime!,
       worktree: worktree,
       runSetupScript: runSetupScript,
-      defaultFontSize: preferredFontSize
+      defaultFontSize: preferredFontSize,
+      agentProcessSnapshotProvider: agentProcessSnapshotProvider
     )
     state.setNotificationsEnabled(notificationsEnabled)
     state.setCommandFinishedNotification(
@@ -691,6 +695,7 @@ final class WorktreeTerminalManager {
     private init(preview: Void) {
       self.runtime = nil
       self.layoutPersistence = .liveValue
+      self.agentProcessSnapshotProvider = .live
       self.preferredFontSize = nil
       self.baselineFontSize = 13
     }
