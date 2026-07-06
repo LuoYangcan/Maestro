@@ -4,20 +4,21 @@ import YiTong
 struct DiffWindowContentView: View {
   var state: DiffWindowState
   @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
-  @State private var fileSearchQuery = ""
   @AppStorage("diffViewStyle") private var diffStyleRaw = DiffStyle.split.rawValue
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
+  @FocusState private var isSearchFocused: Bool
+
+  private var isSearching: Bool {
+    !state.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
+  private var searchShortcut: KeyboardShortcut? {
+    AppShortcuts.resolvedShortcut(for: AppShortcuts.CommandID.searchInDiff, in: resolvedKeybindings)?
+      .keyboardShortcut
+  }
 
   private var diffStyle: DiffStyle {
     DiffStyle(rawValue: diffStyleRaw) ?? .split
-  }
-
-  private var searchedFiles: [DiffChangedFile] {
-    DiffChangedFileSearch.rankedFiles(state.changedFiles, query: fileSearchQuery)
-  }
-
-  private var isSearchingFiles: Bool {
-    !fileSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   private var selectedFileID: Binding<String?> {
@@ -38,6 +39,7 @@ struct DiffWindowContentView: View {
     } detail: {
       diffDetail
     }
+    .background(searchFocusShortcut)
     .focusedSceneValue(\.toggleLeftSidebarAction, toggleSidebar)
     .toolbar(id: "diffToolbar") {
       ToolbarItem(id: "sidebarToggle", placement: .navigation) {
@@ -71,23 +73,97 @@ struct DiffWindowContentView: View {
     }
   }
 
+  @ViewBuilder private var searchFocusShortcut: some View {
+    if let searchShortcut {
+      Button("Search in Changes") {
+        if columnVisibility == .detailOnly {
+          columnVisibility = .automatic
+        }
+        isSearchFocused = true
+      }
+      .keyboardShortcut(searchShortcut)
+      .hidden()
+    }
+  }
+
   private func toggleSidebar() {
     withAnimation {
       columnVisibility = columnVisibility == .detailOnly ? .automatic : .detailOnly
     }
   }
 
-  // MARK: - File List
+  // MARK: - Sidebar
 
   private var fileListSidebar: some View {
+    VStack(spacing: 0) {
+      searchField
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+      Divider()
+      switch state.sidebarContent {
+      case .allFiles(let files), .filteredFiles(let files):
+        fileList(files: files)
+      case .contentMatches(let results):
+        DiffSearchResultsView(
+          results: results,
+          onSelect: state.selectMatch,
+        )
+      case .noResults:
+        ContentUnavailableView(
+          "No Results",
+          systemImage: "magnifyingglass",
+          description: Text("No changes or files match your search"),
+        )
+      }
+    }
+  }
+
+  private var searchField: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "magnifyingglass")
+        .foregroundStyle(.secondary)
+        .accessibilityHidden(true)
+      TextField("Search in changes", text: searchQueryBinding)
+        .textFieldStyle(.plain)
+        .focused($isSearchFocused)
+        .help(
+          AppShortcuts.helpText(
+            title: "Search in Changes",
+            commandID: AppShortcuts.CommandID.searchInDiff,
+            in: resolvedKeybindings
+          ))
+      if isSearching {
+        Button {
+          searchQueryBinding.wrappedValue = ""
+        } label: {
+          Image(systemName: "xmark.circle.fill")
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Clear Search")
+        }
+        .buttonStyle(.plain)
+        .help("Clear Search")
+      }
+    }
+  }
+
+  private var searchQueryBinding: Binding<String> {
+    Binding(
+      get: { state.searchQuery },
+      set: { newValue in
+        state.searchQuery = newValue
+        state.scheduleSearch()
+      },
+    )
+  }
+
+  private func fileList(files: [DiffChangedFile]) -> some View {
     List(selection: selectedFileID) {
-      ForEach(searchedFiles) { file in
+      ForEach(files) { file in
         FileRowView(file: file)
           .tag(file.id)
       }
     }
     .listStyle(.sidebar)
-    .searchable(text: $fileSearchQuery, placement: .sidebar, prompt: "Search Files")
     .overlay {
       if state.isLoadingFiles && state.changedFiles.isEmpty {
         ProgressView()
@@ -97,8 +173,6 @@ struct DiffWindowContentView: View {
           systemImage: "checkmark.circle",
           description: Text("Working directory is clean"),
         )
-      } else if isSearchingFiles && searchedFiles.isEmpty {
-        ContentUnavailableView.search(text: fileSearchQuery)
       }
     }
   }
