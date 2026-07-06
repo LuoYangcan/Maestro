@@ -4,6 +4,7 @@ import YiTong
 struct DiffWindowContentView: View {
   var state: DiffWindowState
   @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
+  @State private var fileSearchQuery = ""
   @AppStorage("diffViewStyle") private var diffStyleRaw = DiffStyle.split.rawValue
   @Environment(\.resolvedKeybindings) private var resolvedKeybindings
   @FocusState private var isSearchFocused: Bool
@@ -19,6 +20,14 @@ struct DiffWindowContentView: View {
 
   private var diffStyle: DiffStyle {
     DiffStyle(rawValue: diffStyleRaw) ?? .split
+  }
+
+  private var searchedFiles: [DiffChangedFile] {
+    DiffChangedFileSearch.rankedFiles(state.changedFiles, query: fileSearchQuery)
+  }
+
+  private var isSearchingFiles: Bool {
+    !fileSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   private var selectedFileID: Binding<String?> {
@@ -152,12 +161,13 @@ struct DiffWindowContentView: View {
 
   private var fileList: some View {
     List(selection: selectedFileID) {
-      ForEach(state.changedFiles) { file in
+      ForEach(searchedFiles) { file in
         FileRowView(file: file)
           .tag(file.id)
       }
     }
     .listStyle(.sidebar)
+    .searchable(text: $fileSearchQuery, placement: .sidebar, prompt: "Search Files")
     .overlay {
       if state.isLoadingFiles && state.changedFiles.isEmpty {
         ProgressView()
@@ -167,6 +177,8 @@ struct DiffWindowContentView: View {
           systemImage: "checkmark.circle",
           description: Text("Working directory is clean"),
         )
+      } else if isSearchingFiles && searchedFiles.isEmpty {
+        ContentUnavailableView.search(text: fileSearchQuery)
       }
     }
   }

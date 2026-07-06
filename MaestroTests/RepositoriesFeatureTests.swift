@@ -9,6 +9,10 @@ import Testing
 
 @testable import Maestro
 
+// Serialized: nearly every case reuses the fixed `/tmp/repo` fixture id, and the reducer reads and
+// writes process-global `@Shared` stores (`.appStorage`, `.settingsFile`, `.repositorySettings`) keyed
+// by fixed keys / that shared root — parallel execution would cross-contaminate state across tests.
+@Suite(.serialized)
 @MainActor
 struct RepositoriesFeatureTests {
   @Test func refreshWorktreesSetsRefreshingStateUntilLoadCompletes() async {
@@ -157,6 +161,94 @@ struct RepositoriesFeatureTests {
       $0.snapshotPersistencePhase = .active
       // Re-sorted: agentA (`aaa`) now precedes agentB (`mmm`).
       $0.activeAgents.entries = [agentA, agentB]
+    }
+    await store.receive(\.delegate.repositoriesChanged)
+    await store.finish()
+  }
+
+  @Test func repositoriesLoadedConvergesActiveAgentDisplayAfterWorktreeAppears() async {
+    let repoRoot = "/tmp/repo"
+    let mainWorktree = makeWorktree(id: repoRoot, name: "main", repoRoot: repoRoot)
+    let newWorktree = makeWorktree(
+      id: "\(repoRoot)/.worktrees/active-agents-worktree-branch",
+      name: "codex/fix-active-agents-worktree-branch",
+      repoRoot: repoRoot
+    )
+    let initialRepository = makeRepository(id: repoRoot, worktrees: [mainWorktree])
+    let updatedRepository = makeRepository(id: repoRoot, worktrees: [mainWorktree, newWorktree])
+    let agent = makeActiveAgentEntry(id: UUID(), workingDirectory: newWorktree.workingDirectory.path)
+    var initialState = makeState(repositories: [initialRepository])
+    initialState.activeAgents.entries = [agent]
+    initialState.activeAgents.creationSeqBySurfaceID = [agent.surfaceID: 0]
+    initialState.activeAgents.nextCreationSeq = 1
+
+    let initialDisplay = activeAgentDisplay(for: agent, state: initialState)
+    #expect(initialDisplay.titleName == "repo")
+    #expect(initialDisplay.branchName == "main")
+
+    let store = TestStore(initialState: initialState) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.repositoryPersistence.saveRepositorySnapshot = { _ in }
+    }
+
+    await store.send(
+      .repositoriesLoaded(
+        [updatedRepository],
+        failures: [],
+        roots: [updatedRepository.rootURL],
+        animated: false
+      )
+    ) {
+      $0.repositories = [updatedRepository]
+      $0.isInitialLoadComplete = true
+      $0.snapshotPersistencePhase = .active
+    }
+    await store.receive(\.delegate.repositoriesChanged)
+    await store.finish()
+
+    let display = activeAgentDisplay(for: agent, state: store.state)
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
+    #expect(store.state.activeAgents.entries[id: agent.id]?.worktreeID == agent.worktreeID)
+  }
+
+  @Test func repositoriesLoadedReSortsActiveAgentsAfterWorktreeAppears() async {
+    let repoRoot = "/tmp/repo"
+    let mainWorktree = makeWorktree(id: repoRoot, name: "main", repoRoot: repoRoot)
+    let zetaWorktree = makeWorktree(id: "\(repoRoot)/.worktrees/zeta", name: "zeta", repoRoot: repoRoot)
+    let newWorktree = makeWorktree(
+      id: "\(repoRoot)/.worktrees/active-agents-worktree-branch",
+      name: "codex/fix-active-agents-worktree-branch",
+      repoRoot: repoRoot
+    )
+    let initialRepository = makeRepository(id: repoRoot, worktrees: [mainWorktree, zetaWorktree])
+    let updatedRepository = makeRepository(id: repoRoot, worktrees: [mainWorktree, zetaWorktree, newWorktree])
+    let agentZeta = makeActiveAgentEntry(id: UUID(), workingDirectory: zetaWorktree.workingDirectory.path)
+    let agentNew = makeActiveAgentEntry(id: UUID(), workingDirectory: newWorktree.workingDirectory.path)
+    var initialState = makeState(repositories: [initialRepository])
+    initialState.activeAgents.entries = [agentZeta, agentNew]
+    initialState.activeAgents.creationSeqBySurfaceID = [agentZeta.surfaceID: 0, agentNew.surfaceID: 1]
+    initialState.activeAgents.nextCreationSeq = 2
+
+    let store = TestStore(initialState: initialState) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.repositoryPersistence.saveRepositorySnapshot = { _ in }
+    }
+
+    await store.send(
+      .repositoriesLoaded(
+        [updatedRepository],
+        failures: [],
+        roots: [updatedRepository.rootURL],
+        animated: false
+      )
+    ) {
+      $0.repositories = [updatedRepository]
+      $0.isInitialLoadComplete = true
+      $0.snapshotPersistencePhase = .active
+      $0.activeAgents.entries = [agentNew, agentZeta]
     }
     await store.receive(\.delegate.repositoriesChanged)
     await store.finish()
@@ -461,6 +553,7 @@ struct RepositoriesFeatureTests {
     let store = TestStore(initialState: makeState(repositories: [repository])) {
       RepositoriesFeature()
     } withDependencies: {
+      $0.gitClient.repositoryWebURL = { _ in nil }
       $0.gitClient.worktrees = { _ in [existingWorktree, discoveredWorktree] }
     }
 
@@ -3493,6 +3586,8 @@ struct RepositoriesFeatureTests {
     initialState.selection = .worktree(selectedWorktree.id)
     let store = TestStore(initialState: initialState) {
       RepositoriesFeature()
+    } withDependencies: {
+      $0.gitClient.repositoryWebURL = { _ in nil }
     }
 
     await store.send(
@@ -5224,6 +5319,21 @@ struct RepositoriesFeatureTests {
     )
   }
 
+  private func activeAgentDisplay(
+    for entry: ActiveAgentEntry,
+    state: RepositoriesFeature.State
+  ) -> ActiveAgentRowDisplay {
+    let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(
+      repositories: state.repositories,
+      customTitles: state.repositoryCustomTitles
+    )
+    return ActiveAgentRowDisplayResolver.display(
+      for: entry,
+      repositories: state.repositories,
+      metadata: metadata
+    )
+  }
+
   @Test func loadPersistedRepositoriesStartsFetchesConcurrentlyAndPreservesRootOrder() async {
     let testID = UUID().uuidString
     let repoRootA = "/tmp/\(testID)-repo-a"
@@ -5241,7 +5351,7 @@ struct RepositoriesFeatureTests {
       worktrees: [worktreeB]
     )
     let gate = AsyncGate()
-    let startedRoots = LockIsolated<Set<String>>([])
+    let secondFetchStarted = AsyncGate()
 
     let store = TestStore(initialState: RepositoriesFeature.State()) {
       RepositoriesFeature()
@@ -5249,12 +5359,12 @@ struct RepositoriesFeatureTests {
       $0.repositoryPersistence.loadRoots = { [repoRootA, repoRootB] }
       $0.gitClient.worktrees = { root in
         let path = root.path(percentEncoded: false)
-        _ = startedRoots.withValue { $0.insert(path) }
         if path == repoRootA {
           await gate.wait()
           return [worktreeA]
         }
         if path == repoRootB {
+          await secondFetchStarted.resume()
           return [worktreeB]
         }
         Issue.record("Unexpected root: \(path)")
@@ -5263,16 +5373,7 @@ struct RepositoriesFeatureTests {
     }
 
     await store.send(.loadPersistedRepositories)
-
-    var secondFetchStarted = false
-    for _ in 0..<100 {
-      if startedRoots.value.contains(repoRootB) {
-        secondFetchStarted = true
-        break
-      }
-      await Task.yield()
-    }
-    #expect(secondFetchStarted)
+    await secondFetchStarted.wait()
 
     await gate.resume()
 

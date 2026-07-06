@@ -67,6 +67,20 @@ actor AgentProcessProbe {
   }
 }
 
+struct AgentProcessSnapshotProvider: Sendable {
+  var foregroundJob: @Sendable (pid_t?, pid_t?) async -> ForegroundJob?
+  var processCurrentDirectory: @Sendable (pid_t) async -> String?
+
+  static let live = AgentProcessSnapshotProvider(
+    foregroundJob: { processGroupID, childPID in
+      await AgentProcessProbe.shared.foregroundJob(processGroupID: processGroupID, childPID: childPID)
+    },
+    processCurrentDirectory: { pid in
+      await AgentProcessProbe.shared.processCurrentDirectory(pid: pid)
+    }
+  )
+}
+
 nonisolated enum ProcessDetection {
   static func foregroundJob(childPID: pid_t) -> ForegroundJob? {
     guard childPID > 0, let processGroupID = foregroundProcessGroupID(pid: childPID) else {
