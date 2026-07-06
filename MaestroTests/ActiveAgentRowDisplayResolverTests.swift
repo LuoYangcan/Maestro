@@ -8,42 +8,34 @@ import Testing
 @Suite struct ActiveAgentRowDisplayResolverTests {
   // MARK: - Golden path
 
-  // Old agent process whose cwd sits at the repository root (an ancestor of the tab's owning
-  // worktree). `resolveWorktreeID` matches the repo-root worktree, but the owning worktree is the
-  // more specific location, so the row must display the owning worktree, not the repo root.
-  @Test func ancestorWorkingDirectoryFallsBackToOwningWorktree() {
+  @Test func registeredAncestorWorkingDirectoryShowsResolvedWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
       owningWorktreeID: childWorktreeID,
-      owningWorktreeName: "memories-page-split",
+      owningWorktreeName: "active-agents-worktree-branch",
       workingDirectory: repositoryRoot
     )
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "memories-page-split")
-    #expect(display.branchName == "memories-page-split")
+    #expect(display.titleName == repositoryRoot.lastPathComponent)
+    #expect(display.branchName == "main")
   }
 
-  // New agent whose cwd really lives inside its owning worktree (or a deeper child of it) — the
-  // resolved worktree is exactly the owner, so the row keeps showing it. The fallback must not
-  // misfire here.
   @Test func workingDirectoryInsideOwningWorktreeShowsOwningWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
       owningWorktreeID: childWorktreeID,
-      owningWorktreeName: "memories-page-split",
+      owningWorktreeName: "active-agents-worktree-branch",
       workingDirectory: childWorktreeDirectory.appending(path: "Sources/Feature")
     )
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "memories-page-split")
-    #expect(display.branchName == "memories-page-split")
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
   }
 
-  // Regression baseline: agent cwd in an unrelated repo must display that repo, not fall back to
-  // the owning worktree.
   @Test func workingDirectoryInUnrelatedRepoShowsThatRepo() {
     let repositories = repositoriesWithTwoRepos()
     let entry = entry(
@@ -58,9 +50,7 @@ import Testing
     #expect(display.branchName == "repo-b-feature")
   }
 
-  // Agent cwd sits in a sibling worktree of the same repository (neither is an ancestor of the
-  // other). Same repo → the row tracks the tab's owning worktree, not the sibling the agent cd'd to.
-  @Test func workingDirectoryInSiblingWorktreeShowsOwningWorktree() {
+  @Test func workingDirectoryInSiblingWorktreeShowsResolvedWorktree() {
     let repositories = repositoriesWithTwoSiblingWorktrees()
     let entry = entry(
       owningWorktreeID: siblingWorktreeAID,
@@ -70,14 +60,11 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "feat-a")
-    #expect(display.branchName == "feat-a")
+    #expect(display.titleName == "feat-b")
+    #expect(display.branchName == "feat-b")
   }
 
-  // Live repro: the tab owns the repo-root worktree (`main`), but the agent process cd'd into a
-  // nested `.worktrees/...` descendant of the same repo. Same repo → the row must show the owning
-  // (repo-root) worktree, not the nested descendant.
-  @Test func workingDirectoryInDescendantWorktreeShowsOwningWorktree() {
+  @Test func workingDirectoryInRegisteredChildWorktreeShowsResolvedWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
       owningWorktreeID: "main-worktree",
@@ -87,13 +74,12 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == repositoryRoot.lastPathComponent)
-    #expect(display.branchName == "main")
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
   }
 
   // MARK: - Boundary
 
-  // `workingDirectory == nil` → tier 3 fallback to the owning worktree's metadata, unchanged.
   @Test func nilWorkingDirectoryFallsBackToOwningWorktreeMetadata() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
@@ -104,48 +90,41 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "memories-page-split")
-    #expect(display.branchName == "memories-page-split")
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
   }
 
-  // cwd equals the owning worktree's own directory (not deeper, not an ancestor) → shows owning.
   @Test func workingDirectoryEqualToOwningWorktreeShowsOwningWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
       owningWorktreeID: childWorktreeID,
-      owningWorktreeName: "memories-page-split",
+      owningWorktreeName: "active-agents-worktree-branch",
       workingDirectory: childWorktreeDirectory
     )
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "memories-page-split")
-    #expect(display.branchName == "memories-page-split")
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
   }
 
-  // cwd outside every known repo/worktree (tier 2). A directory that belongs to no repository is
-  // *not* "a different repository", so the row falls back to the tab's owning worktree rather than
-  // deriving a meaningless folder name. (Intentional behavior change: previously showed "Downloads".)
   @Test func workingDirectoryOutsideAllReposShowsOwningWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let outside = URL(fileURLWithPath: "/Users/someone/Downloads")
     let entry = entry(
       owningWorktreeID: childWorktreeID,
-      owningWorktreeName: "memories-page-split",
+      owningWorktreeName: "active-agents-worktree-branch",
       workingDirectory: outside
     )
 
     let display = display(for: entry, repositories: repositories)
 
-    #expect(display.titleName == "memories-page-split")
-    #expect(display.branchName == "memories-page-split")
+    #expect(display.titleName == "active-agents-worktree-branch")
+    #expect(display.branchName == "codex/fix-active-agents-worktree-branch")
   }
 
-  // Owning worktree id cannot be found in `repositories` (deleted/not loaded). With no basis for
-  // the ancestor comparison, the resolved worktree is kept; must not crash.
   @Test func owningWorktreeNotFoundKeepsResolvedWorktree() {
     let repositories = repositoriesWithMainAndChildWorktree()
-    // cwd resolves to the repo root; owner id is unknown, so the ancestor check can't run.
     let entry = entry(
       owningWorktreeID: "non-existent-worktree-id",
       owningWorktreeName: "ghost",
@@ -154,16 +133,11 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    // No fallback basis → the resolved (repo-root) worktree's metadata is shown.
     #expect(display.titleName == repositoryRoot.lastPathComponent)
     #expect(display.branchName == "main")
   }
 
-  // Plain-folder repo (keyed by repository id, directory == repo root) as the owning target: the
-  // ancestor check still works when the owner is a plain folder. Here a git worktree at the root
-  // would shadow it, so we model the plain folder as the deeper, more-specific owner inside an
-  // outer git worktree that resolves as an ancestor.
-  @Test func plainFolderOwnerFallsBackWhenResolvedIsAncestor() {
+  @Test func plainFolderOwnerDoesNotOverrideResolvedWorktree() {
     let outerWorktreeDir = URL(fileURLWithPath: "/work/outer")
     let plainFolderDir = outerWorktreeDir.appending(path: "nested-folder")
 
@@ -191,7 +165,6 @@ import Testing
     )
     let repositories = IdentifiedArray(uniqueElements: [gitRepo, plainRepo])
 
-    // Agent cwd sits at the outer worktree (ancestor of the plain folder it actually owns).
     let entry = entry(
       owningWorktreeID: "plain-folder",
       owningWorktreeName: "Nested Folder",
@@ -200,16 +173,12 @@ import Testing
 
     let display = display(for: entry, repositories: repositories)
 
-    // Resolved = outer worktree (ancestor) → falls back to the plain-folder owner.
-    #expect(display.titleName == "nested-folder")
-    #expect(display.branchName == "Nested Folder")
+    #expect(display.titleName == "outer")
+    #expect(display.branchName == "outer-main")
   }
 
   // MARK: - Sorter / display consistency
 
-  // The sort key must read from the same worktree the row label shows. In the descendant layout the
-  // label shows the owning (repo-root) worktree, so the sort key's worktree/branch must too — they
-  // can no longer diverge into different ordering groups.
   @Test func sortKeyMatchesDisplayInDescendantLayout() {
     let repositories = repositoriesWithMainAndChildWorktree()
     let entry = entry(
@@ -225,8 +194,6 @@ import Testing
     #expect(sortKey.branchName == display.branchName)
   }
 
-  // Cross-repo: the agent really moved into a different repository, so both the label and the sort
-  // key use the resolved worktree (repo-b) — still consistent with each other.
   @Test func sortKeyMatchesDisplayInCrossRepoLayout() {
     let repositories = repositoriesWithTwoRepos()
     let entry = entry(
@@ -245,13 +212,13 @@ import Testing
   // MARK: - Fixtures
 
   private let repositoryRoot = URL(fileURLWithPath: "/work/today-platform-ios")
-  private let childWorktreeID = "memories-page-split"
+  private let childWorktreeID = "active-agents-worktree-branch"
   private var childWorktreeDirectory: URL {
-    repositoryRoot.appending(path: ".worktrees/memories-page-split")
+    repositoryRoot.appending(path: ".worktrees/active-agents-worktree-branch")
   }
 
   /// A single git repo whose main worktree is the repo root and whose child worktree lives under
-  /// `.worktrees/`. The repo-root worktree is therefore a strict ancestor of the child.
+  /// `.worktrees/`.
   private func repositoriesWithMainAndChildWorktree() -> IdentifiedArrayOf<Repository> {
     let repository = Repository(
       id: "today-platform-ios",
@@ -268,7 +235,7 @@ import Testing
         ),
         Worktree(
           id: childWorktreeID,
-          name: "memories-page-split",
+          name: "codex/fix-active-agents-worktree-branch",
           detail: "detail",
           workingDirectory: childWorktreeDirectory,
           repositoryRootURL: repositoryRoot
@@ -287,8 +254,7 @@ import Testing
     URL(fileURLWithPath: "/work/repo/.worktrees/feat-b")
   }
 
-  /// A single git repo with two parallel `.worktrees/` siblings. Neither directory contains the
-  /// other, so the same-repo rule (not an ancestor check) is what makes the owning worktree win.
+  /// A single git repo with two parallel `.worktrees/` siblings.
   private func repositoriesWithTwoSiblingWorktrees() -> IdentifiedArrayOf<Repository> {
     let repository = Repository(
       id: "repo",

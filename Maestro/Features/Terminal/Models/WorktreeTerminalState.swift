@@ -64,6 +64,7 @@ final class WorktreeTerminalState {
   let tabManager: TerminalTabManager
   private let runtime: GhosttyRuntime
   private let worktree: Worktree
+  private let agentProcessSnapshotProvider: AgentProcessSnapshotProvider
   @ObservationIgnored
   @SharedReader private var repositorySettings: RepositorySettings
   private var trees: [TerminalTabID: SplitTree<GhosttySurfaceView>] = [:]
@@ -171,10 +172,12 @@ final class WorktreeTerminalState {
     runtime: GhosttyRuntime,
     worktree: Worktree,
     runSetupScript: Bool = false,
-    defaultFontSize: Float32? = nil
+    defaultFontSize: Float32? = nil,
+    agentProcessSnapshotProvider: AgentProcessSnapshotProvider = .live
   ) {
     self.runtime = runtime
     self.worktree = worktree
+    self.agentProcessSnapshotProvider = agentProcessSnapshotProvider
     self.pendingSetupScript = runSetupScript
     self.defaultFontSize = defaultFontSize
     self.tabManager = TerminalTabManager()
@@ -1097,20 +1100,57 @@ final class WorktreeTerminalState {
 
   /// Forces an immediate re-detection for every surface that currently has a detected agent, so a
   /// manual refresh picks up the agent's live working directory without waiting for the next poll
-  /// tick. Clearing the cached emitted directory guarantees the freshly probed cwd re-emits even
-  /// when only the directory changed. Surfaces without an agent are left untouched (no entry is
-  /// conjured), and the whole pass is skipped while detection is disabled.
+  /// tick. Surfaces without an agent are left untouched (no entry is conjured), and the whole pass
+  /// is skipped while detection is disabled.
   func resyncActiveAgents() {
-    guard agentDetectionEnabled else { return }
-    for (surfaceID, view) in surfaces {
-      guard surfaceHasDetectedAgent(surfaceID), let tabId = tabId(containing: surfaceID) else { continue }
-      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+    for (view, tabId) in surfacesNeedingActiveAgentResync() {
       Task { @MainActor [weak self, weak view] in
         guard let self, let view, self.surfaces[view.id] != nil else { return }
         await self.detectAgentState(for: view, tabId: tabId)
       }
     }
   }
+
+  /// Clears the cached emitted directory for every surface that currently has a detected agent and
+  /// returns the `(view, tabId)` pairs that need a fresh detection pass. Clearing the cache
+  /// guarantees the freshly probed cwd re-emits even when only the directory changed. Shared by
+  /// `resyncActiveAgents()` (fire-and-forget) and its awaitable DEBUG counterpart so their selection
+  /// and cache-clearing logic can't drift apart. Returns nothing while detection is disabled.
+  private func surfacesNeedingActiveAgentResync() -> [(view: GhosttySurfaceView, tabId: TerminalTabID)] {
+    guard agentDetectionEnabled else { return [] }
+    var pending: [(view: GhosttySurfaceView, tabId: TerminalTabID)] = []
+    for (surfaceID, view) in surfaces {
+      guard surfaceHasDetectedAgent(surfaceID), let tabId = tabId(containing: surfaceID) else { continue }
+      lastEmittedWorkingDirectoryBySurface.removeValue(forKey: surfaceID)
+      pending.append((view, tabId))
+    }
+    return pending
+  }
+
+  #if DEBUG
+    func setAgentDetectionEnabledForTesting(_ enabled: Bool) {
+      agentDetectionEnabled = enabled
+    }
+
+    func seedAgentDetectionForTesting(
+      surfaceID: UUID,
+      state: PaneAgentState,
+      emittedWorkingDirectory: URL?
+    ) {
+      guard surfaces[surfaceID] != nil else { return }
+      surfaceAgentStates[surfaceID] = state
+      recordEmittedWorkingDirectory(
+        surfaceID: surfaceID,
+        currentDirectory: emittedWorkingDirectory?.standardizedFileURL
+      )
+    }
+
+    func resyncActiveAgentsForTesting() async {
+      for (view, tabId) in surfacesNeedingActiveAgentResync() {
+        await detectAgentState(for: view, tabId: tabId)
+      }
+    }
+  #endif
 
   private func surfaceHasDetectedAgent(_ surfaceID: UUID) -> Bool {
     guard let state = surfaceAgentStates[surfaceID] else { return false }
@@ -1733,7 +1773,7 @@ final class WorktreeTerminalState {
     let surfaceID = view.id
     let childPID = view.bridge.childPID()
     let processGroupID = view.bridge.foregroundProcessGroupID()
-    let job = await AgentProcessProbe.shared.foregroundJob(processGroupID: processGroupID, childPID: childPID)
+    let job = await agentProcessSnapshotProvider.foregroundJob(processGroupID, childPID)
     guard surfaces[surfaceID] != nil else { return }
 
     let identified = job.flatMap { identifyAgentInJob($0) }
@@ -1929,7 +1969,7 @@ final class WorktreeTerminalState {
 
   private func processCurrentDirectoryPath(for identified: IdentifiedAgentProcess?) async -> String? {
     guard let pid = identified?.pid else { return nil }
-    return await AgentProcessProbe.shared.processCurrentDirectory(pid: pid)
+    return await agentProcessSnapshotProvider.processCurrentDirectory(pid)
   }
 
   private func recordEmittedWorkingDirectory(surfaceID: UUID, currentDirectory: URL?) {

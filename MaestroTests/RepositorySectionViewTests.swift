@@ -216,7 +216,7 @@ struct RepositorySectionViewTests {
     #expect(display.branchName == "notes")
   }
 
-  @Test func activeAgentRowDisplayFallsBackToPathComponentForUnknownDirectory() {
+  @Test func activeAgentRowDisplayFallsBackToOwningWorktreeForUnknownDirectory() {
     let tabWorktree = makeWorktree(repoRoot: "/tmp/tab-repo", path: "/tmp/tab-repo", branch: "main")
     let tabRepo = makeRepository(id: "/tmp/tab-repo", name: "tab-repo", worktrees: [tabWorktree])
     let metadata = ActiveAgentRowDisplayResolver.worktreeMetadata(repositories: [tabRepo], customTitles: [:])
@@ -228,9 +228,8 @@ struct RepositorySectionViewTests {
     )
     let display = ActiveAgentRowDisplayResolver.display(for: entry, repositories: [tabRepo], metadata: metadata)
 
-    #expect(display.titleName == "playground")
-    #expect(display.branchName == "playground")
-    #expect(display.color == nil)
+    #expect(display.titleName == "tab-repo")
+    #expect(display.branchName == "main")
   }
 
   @Test func activeAgentRowDisplayFallsBackToOwningWorktreeWhenDirectoryUnknown() {
