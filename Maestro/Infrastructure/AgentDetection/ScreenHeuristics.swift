@@ -164,21 +164,24 @@ nonisolated private func detectCopilot(_ content: String) -> AgentRawState {
 }
 
 nonisolated private func detectKimi(_ content: String) -> AgentRawState {
-  let lower = content.lowercased()
+  // Approval prompts are live dialogs at the bottom of the screen; once answered, their text
+  // is committed to scrollback with new activity below. Anchor blocked matching to the bottom
+  // 10 non-blank lines: covers a live panel above the 3-line toolbar, but a committed panel
+  // with new output below it falls outside and no longer pins the state to `.blocked`.
+  let transient = recentLines(content, limit: 10)
+  let transientLower = transient.lowercased()
   let blockedPatterns = [
     "allow?", "confirm?", "approve?", "proceed?", "[y/n]", "(y/n)",
   ]
-  if blockedPatterns.contains(where: lower.contains)
-    || hasConfirmationPrompt(lower)
-    || hasKimiApprovalPanel(content: content, lower: lower)
+  if blockedPatterns.contains(where: transientLower.contains)
+    || hasConfirmationPrompt(transientLower)
+    || hasKimiApprovalPanel(content: transient, lower: transientLower)
   {
     return .blocked
   }
 
-  let workingPatterns = [
-    "thinking", "processing", "generating", "waiting for response", "ctrl+c to cancel", "ctrl-c to cancel",
-  ]
-  if workingPatterns.contains(where: lower.contains)
+  let lower = content.lowercased()
+  if hasKimiActivityLabel(content)
     || hasKimiMoonSpinner(content)
     || hasKimiToolSpinner(content: content, lower: lower)
   {
@@ -347,7 +350,37 @@ nonisolated private func hasKimiApprovalPanel(content: String, lower: String) ->
 
 nonisolated private func hasKimiMoonSpinner(_ content: String) -> Bool {
   let moonSpinners: Set<Character> = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"]
-  return content.contains { moonSpinners.contains($0) }
+  return content.split(separator: "\n").contains { line in
+    guard let first = line.trimmingCharacters(in: .whitespaces).first else { return false }
+    return moonSpinners.contains(first)
+  }
+}
+
+// Matches kimi-cli's transient activity lines (`Thinking` / `Composing` labels), which only
+// appear in the live region while a turn is running and are never committed to history.
+// Committed lookalikes (`Thought for …`, prose starting with "Thinking") must not match.
+nonisolated private func hasKimiActivityLabel(_ content: String) -> Bool {
+  content.split(separator: "\n").contains { line in
+    var trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
+    // The `Composing...` (and legacy `Thinking...`) label renders behind a braille
+    // dots spinner (`⠋ Composing...`), so tolerate one leading braille frame char.
+    if let first = trimmed.unicodeScalars.first, (0x2800...0x28FF).contains(Int(first.value)) {
+      trimmed = trimmed.dropFirst().trimmingCharacters(in: .whitespaces)
+    }
+    for label in ["thinking", "composing"] where trimmed.hasPrefix(label) {
+      let rest = trimmed.dropFirst(label.count)
+      return rest.split(separator: " ").allSatisfy(isKimiSpinnerDecoration)
+    }
+    return false
+  }
+}
+
+// After the label, a live activity line carries only spinner decoration: animated dots,
+// elapsed time (`12s`, `1m 30s`, `<1s`), `·`, and token counters (`800 tokens`, `45 tok/s`).
+nonisolated private func isKimiSpinnerDecoration(_ token: Substring) -> Bool {
+  if token.allSatisfy({ $0 == "." }) { return true }
+  if token == "·" || token == "token" || token == "tokens" || token == "tok/s" { return true }
+  return token.wholeMatch(of: /<?\d+(\.\d+)?(ms|[smhk])?/) != nil
 }
 
 nonisolated private func hasKimiToolSpinner(content: String, lower: String) -> Bool {

@@ -297,7 +297,7 @@ struct ScreenHeuristicsTests {
   @Test func kimiDetection() {
     #expect(DetectedAgent.kimi.detectState(in: "approve? [y/n]") == .blocked)
     #expect(DetectedAgent.kimi.detectState(in: "thinking") == .working)
-    #expect(DetectedAgent.kimi.detectState(in: "ctrl-c to cancel") == .working)
+    #expect(DetectedAgent.kimi.detectState(in: "ctrl-c to cancel") == .idle)
     #expect(DetectedAgent.kimi.detectState(in: "🌘") == .working)
     #expect(DetectedAgent.kimi.detectState(in: "⠸ Using Shell (git status)") == .working)
     #expect(
@@ -344,6 +344,131 @@ struct ScreenHeuristicsTests {
       ) == .blocked
     )
     #expect(DetectedAgent.kimi.detectState(in: "done") == .idle)
+  }
+
+  @Test func kimiWorkingIndicators() {
+    #expect(DetectedAgent.kimi.detectState(in: "Thinking...  3s · 120 tokens") == .working)
+    #expect(DetectedAgent.kimi.detectState(in: "Thinking  <1s · 0 tokens") == .working)
+    #expect(DetectedAgent.kimi.detectState(in: "Thinking..  1m 30s · 800 tokens · 45 tok/s") == .working)
+    #expect(DetectedAgent.kimi.detectState(in: "Composing... 5s · 1.2k tokens") == .working)
+    #expect(DetectedAgent.kimi.detectState(in: "⠋ Composing... 5s · 1.2k tokens") == .working)
+  }
+
+  @Test func kimiCompletedScreenIsIdle() {
+    #expect(
+      DetectedAgent.kimi.detectState(
+        in: """
+          • Used Shell (git status)
+          Thought for 12s · 800 tokens
+          I was thinking about the processing pipeline before generating the diff,
+          and ended up using git status to verify the result.
+          \(String(repeating: "\n", count: 40))
+          ─────────────────────────────────────────────────────────────────────
+          agent (kimi-k2.5 ●)  ~/Sync/github/Maestro  main  ctrl-o: editor
+                                                    context: 6.5% (17k/262.1k)
+          """
+      ) == .idle
+    )
+  }
+
+  @Test func kimiIndicatorsRequireLineStartAnchors() {
+    #expect(DetectedAgent.kimi.detectState(in: "Thinking about the design, the agent wrote…") == .idle)
+    #expect(DetectedAgent.kimi.detectState(in: "Thought for 12s · 800 tokens") == .idle)
+    #expect(DetectedAgent.kimi.detectState(in: "The answer is 🌕 yes") == .idle)
+  }
+
+  @Test func kimiApprovedPanelFollowedByActivityIsWorking() {
+    #expect(
+      DetectedAgent.kimi.detectState(
+        in: """
+          ╭─ approval ─────────────────────────────────────────────────────────╮
+          │  Shell is requesting approval to run command:                      │
+          │                                                                    │
+          │ → [1] Approve once                                                 │
+          │   [2] Approve for this session                                     │
+          │   [3] Reject                                                       │
+          │   [4] Reject, tell the model what to do instead                    │
+          │                                                                    │
+          │   ▲/▼ select  1/2/3/4 choose  ↵ confirm                            │
+          ╰────────────────────────────────────────────────────────────────────╯
+          ⠸ Using Shell (git log --oneline -3)
+          \(String(repeating: "\n", count: 40))
+          ─────────────────────────────────────────────────────────────────────
+          agent (kimi-k2.5 ●)  ~/Sync/github/Maestro  feat/active-agents-pa…  ctrl-o: editor
+                                                    context: 6.5% (17k/262.1k)
+          """
+      ) == .working
+    )
+    #expect(
+      DetectedAgent.kimi.detectState(
+        in: """
+          ╭─ approval ─────────────────────────────────────────────────────────╮
+          │  Shell is requesting approval to run command:                      │
+          │                                                                    │
+          │ → [1] Approve once                                                 │
+          │   [2] Approve for this session                                     │
+          │   [3] Reject                                                       │
+          │   [4] Reject, tell the model what to do instead                    │
+          │                                                                    │
+          │   ▲/▼ select  1/2/3/4 choose  ↵ confirm                            │
+          ╰────────────────────────────────────────────────────────────────────╯
+          Thinking...  3s · 120 tokens
+          \(String(repeating: "\n", count: 40))
+          ─────────────────────────────────────────────────────────────────────
+          agent (kimi-k2.5 ●)  ~/Sync/github/Maestro  feat/active-agents-pa…  ctrl-o: editor
+                                                    context: 6.5% (17k/262.1k)
+          """
+      ) == .working
+    )
+  }
+
+  @Test func kimiApprovalPanelPushedOutOfTransientRegionIsIdle() {
+    #expect(
+      DetectedAgent.kimi.detectState(
+        in: """
+          ╭─ approval ─────────────────────────────────────────────────────────╮
+          │  Shell is requesting approval to run command:                      │
+          │                                                                    │
+          │ → [1] Approve once                                                 │
+          │   [2] Approve for this session                                     │
+          │   [3] Reject                                                       │
+          │   [4] Reject, tell the model what to do instead                    │
+          │                                                                    │
+          │   ▲/▼ select  1/2/3/4 choose  ↵ confirm                            │
+          ╰────────────────────────────────────────────────────────────────────╯
+          • Used Shell (git log --oneline -3)
+          Thought for 12s · 800 tokens
+          Here is the recent commit history you asked for.
+          Each entry shows the short hash and subject line.
+          \(String(repeating: "\n", count: 40))
+          ─────────────────────────────────────────────────────────────────────
+          agent (kimi-k2.5 ●)  ~/Sync/github/Maestro  main  ctrl-o: editor
+                                                    context: 6.5% (17k/262.1k)
+          """
+      ) == .idle
+    )
+  }
+
+  @Test func kimiCommittedConfirmationWordsOutsideTransientRegionAreIdle() {
+    #expect(
+      DetectedAgent.kimi.detectState(
+        in: """
+          I can proceed? Let me confirm? — do you want details? Yes, here is the plan.
+          The first step reads the current branch state.
+          The second step compares it against the remote.
+          The third step prepares the commit message.
+          The fourth step runs the test suite.
+          The fifth step formats the changed files.
+          The sixth step stages only the touched files.
+          The seventh step opens the pull request.
+          All checks passed and the branch is ready for review.
+          \(String(repeating: "\n", count: 40))
+          ─────────────────────────────────────────────────────────────────────
+          agent (kimi-k2.5 ●)  ~/Sync/github/Maestro  main  ctrl-o: editor
+                                                    context: 6.5% (17k/262.1k)
+          """
+      ) == .idle
+    )
   }
 
   @Test func droidDetection() {

@@ -27,7 +27,7 @@ struct PaneAgentStateTests {
       previous: .idle,
       raw: .working,
       now: now,
-      lastClaudeWorkingAt: &lastWorking
+      lastWorkingAt: &lastWorking
     )
     #expect(working == .working)
 
@@ -36,7 +36,7 @@ struct PaneAgentStateTests {
       previous: .working,
       raw: .idle,
       now: now.addingTimeInterval(0.4),
-      lastClaudeWorkingAt: &lastWorking
+      lastWorkingAt: &lastWorking
     )
     #expect(stillWorking == .working)
   }
@@ -50,7 +50,7 @@ struct PaneAgentStateTests {
       previous: .working,
       raw: .idle,
       now: now.addingTimeInterval(1.201),
-      lastClaudeWorkingAt: &lastWorking
+      lastWorkingAt: &lastWorking
     )
 
     #expect(idle == .idle)
@@ -65,11 +65,64 @@ struct PaneAgentStateTests {
       previous: .working,
       raw: .idle,
       now: now,
-      lastClaudeWorkingAt: &lastWorking
+      lastWorkingAt: &lastWorking
     )
 
     #expect(idle == .idle)
     #expect(lastWorking == nil)
+  }
+
+  @Test func kimiWorkingIsStickyForShortIdleGap() {
+    let now = Date(timeIntervalSince1970: 100)
+    var lastWorking: Date?
+
+    let working = stabilizeAgentState(
+      agent: .kimi,
+      previous: .idle,
+      raw: .working,
+      now: now,
+      lastWorkingAt: &lastWorking
+    )
+    #expect(working == .working)
+
+    let stillWorking = stabilizeAgentState(
+      agent: .kimi,
+      previous: .working,
+      raw: .idle,
+      now: now.addingTimeInterval(0.4),
+      lastWorkingAt: &lastWorking
+    )
+    #expect(stillWorking == .working)
+  }
+
+  @Test func kimiTransitionsToIdleAfterStickyWindow() {
+    let now = Date(timeIntervalSince1970: 100)
+    var lastWorking: Date? = now
+
+    let idle = stabilizeAgentState(
+      agent: .kimi,
+      previous: .working,
+      raw: .idle,
+      now: now.addingTimeInterval(1.201),
+      lastWorkingAt: &lastWorking
+    )
+
+    #expect(idle == .idle)
+  }
+
+  @Test func kimiBlockedBypassesStickyWindow() {
+    let now = Date(timeIntervalSince1970: 100)
+    var lastWorking: Date? = now
+
+    let blocked = stabilizeAgentState(
+      agent: .kimi,
+      previous: .working,
+      raw: .blocked,
+      now: now.addingTimeInterval(0.4),
+      lastWorkingAt: &lastWorking
+    )
+
+    #expect(blocked == .blocked)
   }
 
   @Test func presenceRequiresSixMissesBeforeRelease() {

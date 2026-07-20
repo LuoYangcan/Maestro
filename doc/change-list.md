@@ -13,6 +13,14 @@ Future upstream checks should only inspect commits **after** this baseline.
 
 ---
 
+## 2026-07-20 — Kimi agent state detection fix
+
+### Fork-only changes
+
+- **Kimi completion/blocked state detection fixed** (`fix/kimi-completion-state`) — `detectKimi` in `ScreenHeuristics.swift` matched bare substrings (`thinking`/`processing`/`generating`, approval-panel keywords) across the whole 24-line viewport, so answer text committed to scrollback kept hitting them: kimi stayed "working" forever after finishing, and stayed "blocked" after an approval was granted. Working indicators are now anchored to line-start transient markers (line-start moon spinner, `Thinking`/`Composing` labels followed only by spinner decoration, braille `Using` tool lines), blocked signals evaluate only the bottom 10 non-empty lines (the live approval-panel region), and the 1.2s working-hold (previously claude-only, renamed `claudeWorkingHold`→`agentWorkingHold`) now covers kimi to bridge repaint gaps.
+
+---
+
 ## 2026-06-04 — Rebrand to Maestro + fork divergence
 
 ### Fork-only changes
