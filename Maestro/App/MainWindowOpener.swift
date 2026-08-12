@@ -24,6 +24,7 @@ final class MainWindowOpener {
   static let shared = MainWindowOpener()
 
   private var opener: (() -> Void)?
+  private var hasPendingOpenRequest = false
   var hasRegisteredOpener: Bool {
     opener != nil
   }
@@ -32,14 +33,18 @@ final class MainWindowOpener {
 
   func register(_ opener: @escaping () -> Void) {
     self.opener = opener
+    guard hasPendingOpenRequest else { return }
+    hasPendingOpenRequest = false
+    opener()
   }
 
-  /// Requests a new main window. Returns `false` when no opener has been
-  /// registered yet (e.g. the main window has never appeared this launch), so
-  /// callers can fall back to AppKit's default reopen handling.
+  /// Requests a new main window. Returns whether the request was accepted.
   @discardableResult
   func openMainWindow() -> Bool {
-    guard let opener else { return false }
+    guard let opener else {
+      hasPendingOpenRequest = true
+      return true
+    }
     opener()
     return true
   }
