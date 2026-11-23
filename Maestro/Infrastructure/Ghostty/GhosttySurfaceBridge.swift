@@ -30,6 +30,7 @@ final class GhosttySurfaceBridge {
   func handleAction(target: ghostty_target_s, action: ghostty_action_s) -> Bool {
     if let handled = handleAppAction(action) { return handled }
     if let handled = handleSplitAction(action) { return handled }
+    if let handled = handleOpenURL(action) { return handled }
     if handleTitleAndPath(action) { return false }
     if handleCommandStatus(action) { return false }
     if handleMouseAndLink(action) { return false }
@@ -67,12 +68,31 @@ final class GhosttySurfaceBridge {
 
   func foregroundProcessGroupID() -> pid_t? {
     guard let surface else { return nil }
-    let processGroupID = ghostty_surface_foreground_process_group(surface)
-    return processGroupID > 0 ? pid_t(processGroupID) : nil
+    let processGroupID = ghostty_surface_foreground_pid(surface)
+    guard processGroupID > 0, let pid = pid_t(exactly: processGroupID) else { return nil }
+    return pid
   }
 
   func closeSurface(processAlive: Bool) {
     onCloseRequest?(processAlive)
+  }
+
+  // libghostty 1.4 refuses to open OSC 8 / unknown-kind links itself on macOS;
+  // check and open them here while letting Ghostty handle its own `text`/`html` kinds.
+  private func handleOpenURL(_ action: ghostty_action_s) -> Bool? {
+    guard action.tag == GHOSTTY_ACTION_OPEN_URL else { return nil }
+    let openURL = action.action.open_url
+    guard let value = string(from: openURL.url, length: openURL.len) else { return true }
+    switch openURL.kind {
+    case GHOSTTY_ACTION_OPEN_URL_KIND_OSC8:
+      TerminalLinkOpener.open(TerminalLink(value))
+      return true
+    case GHOSTTY_ACTION_OPEN_URL_KIND_UNKNOWN:
+      TerminalLinkOpener.open(TerminalLink(unknownKindValue: value))
+      return true
+    default:
+      return false
+    }
   }
 
   private func handleAppAction(_ action: ghostty_action_s) -> Bool? {
@@ -308,12 +328,6 @@ final class GhosttySurfaceBridge {
 
     case GHOSTTY_ACTION_RENDERER_HEALTH:
       state.rendererHealth = action.action.renderer_health
-      return true
-
-    case GHOSTTY_ACTION_OPEN_URL:
-      let openUrl = action.action.open_url
-      state.openUrlKind = openUrl.kind
-      state.openUrl = string(from: openUrl.url, length: openUrl.len)
       return true
 
     case GHOSTTY_ACTION_COLOR_CHANGE:

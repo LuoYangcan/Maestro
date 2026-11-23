@@ -63,11 +63,17 @@ final class GhosttyRuntime {
       action_cb: { @Sendable app, target, action in
         GhosttyRuntime.actionCallback(app, target, action)
       },
-      read_clipboard_cb: { @Sendable userdata, location, state in
-        GhosttyRuntime.readClipboardCallback(userdata, location, state)
+      read_clipboard_cb: { @Sendable userdata, location, state, mimes, mimesLen, list in
+        GhosttyRuntime.readClipboardCallback(
+          userdata,
+          location,
+          state,
+          UnsafeBufferPointer(start: mimes, count: mimesLen),
+          list
+        )
       },
-      confirm_read_clipboard_cb: { @Sendable userdata, string, state, request in
-        GhosttyRuntime.confirmReadClipboardCallback(userdata, string, state, request)
+      confirm_read_clipboard_cb: { @Sendable userdata, confirm, state, request in
+        GhosttyRuntime.confirmReadClipboardCallback(userdata, confirm, state, request)
       },
       write_clipboard_cb: { @Sendable userdata, location, content, len, confirm in
         GhosttyRuntime.writeClipboardCallback(userdata, location, content, len, confirm)
@@ -342,48 +348,53 @@ final class GhosttyRuntime {
   private nonisolated static func readClipboardCallback(
     _ userdata: UnsafeMutableRawPointer?,
     _ location: ghostty_clipboard_e,
-    _ state: UnsafeMutableRawPointer?
-  ) -> Bool {
+    _ state: UnsafeMutableRawPointer?,
+    _ mimes: UnsafeBufferPointer<UnsafePointer<CChar>?>,
+    _ list: Bool
+  ) -> ghostty_clipboard_read_result_e {
+    let requested = mimes.compactMap { pointer in pointer.map { String(cString: $0) } }
     let userdataBits = userdata.map { UInt(bitPattern: $0) }
     let stateBits = state.map { UInt(bitPattern: $0) }
     if Thread.isMainThread {
       return MainActor.assumeIsolated {
-        readClipboard(userdataBits: userdataBits, location: location, stateBits: stateBits)
+        readClipboard(
+          userdataBits: userdataBits,
+          location: location,
+          stateBits: stateBits,
+          mimes: requested,
+          list: list
+        )
       }
     }
     return DispatchQueue.main.sync {
       MainActor.assumeIsolated {
-        readClipboard(userdataBits: userdataBits, location: location, stateBits: stateBits)
+        readClipboard(
+          userdataBits: userdataBits,
+          location: location,
+          stateBits: stateBits,
+          mimes: requested,
+          list: list
+        )
       }
     }
   }
 
   private nonisolated static func confirmReadClipboardCallback(
     _ userdata: UnsafeMutableRawPointer?,
-    _ string: UnsafePointer<CChar>?,
+    _ confirm: UnsafePointer<ghostty_clipboard_confirm_s>?,
     _ state: UnsafeMutableRawPointer?,
     _ request: ghostty_clipboard_request_e
   ) {
-    guard let string else { return }
-    let value = String(cString: string)
+    let payload = confirm.map { GhosttyClipboardPayload(confirm: $0.pointee) }
     let userdataBits = userdata.map { UInt(bitPattern: $0) }
     let stateBits = state.map { UInt(bitPattern: $0) }
-    if Thread.isMainThread {
-      MainActor.assumeIsolated {
-        confirmReadClipboard(
-          userdataBits: userdataBits,
-          value: value,
-          stateBits: stateBits,
-          request: request
-        )
-      }
-      return
-    }
+    // Always defer: completing or denying a request synchronously inside the libghostty
+    // callback that created it is not safe.
     DispatchQueue.main.async {
       MainActor.assumeIsolated {
         confirmReadClipboard(
           userdataBits: userdataBits,
-          value: value,
+          payload: payload,
           stateBits: stateBits,
           request: request
         )
@@ -403,7 +414,9 @@ final class GhosttyRuntime {
     let items: [(mime: String, data: String)] = (0..<len).compactMap { index in
       let item = content.advanced(by: index).pointee
       guard let mimePtr = item.mime, let dataPtr = item.data else { return nil }
-      return (mime: String(cString: mimePtr), data: String(cString: dataPtr))
+      let bytes = UnsafeRawBufferPointer(start: dataPtr, count: item.len)
+      guard let data = String(bytes: bytes, encoding: .utf8) else { return nil }
+      return (mime: String(cString: mimePtr), data: data)
     }
     guard !items.isEmpty else { return }
     if Thread.isMainThread {
@@ -519,25 +532,29 @@ final class GhosttyRuntime {
   private static func readClipboard(
     userdataBits: UInt?,
     location: ghostty_clipboard_e,
-    stateBits: UInt?
-  ) -> Bool {
+    stateBits: UInt?,
+    mimes: [String],
+    list: Bool
+  ) -> ghostty_clipboard_read_result_e {
     let userdata = userdataBits.flatMap { UnsafeMutableRawPointer(bitPattern: $0) }
     let state = stateBits.flatMap { UnsafeMutableRawPointer(bitPattern: $0) }
     guard let bridge = surfaceBridge(fromUserdata: userdata), let surface = bridge.surface else {
-      return false
+      return GHOSTTY_CLIPBOARD_READ_UNSUPPORTED
     }
-    guard let value = NSPasteboard.ghostty(location)?.getOpinionatedStringContents() else {
-      return false
+    guard let pasteboard = NSPasteboard.ghostty(location) else {
+      return GHOSTTY_CLIPBOARD_READ_UNSUPPORTED
     }
-    value.withCString { ptr in
-      ghostty_surface_complete_clipboard_request(surface, ptr, state, false)
+    let payload = GhosttyClipboardPayload(pasteboard: pasteboard, mimes: mimes, list: list)
+    if payload.contents.isEmpty, !list {
+      return GHOSTTY_CLIPBOARD_READ_UNAVAILABLE
     }
-    return true
+    completeClipboardRequest(surface, payload: payload, state: state)
+    return GHOSTTY_CLIPBOARD_READ_STARTED
   }
 
   private static func confirmReadClipboard(
     userdataBits: UInt?,
-    value: String,
+    payload: GhosttyClipboardPayload?,
     stateBits: UInt?,
     request: ghostty_clipboard_request_e
   ) {
@@ -547,8 +564,66 @@ final class GhosttyRuntime {
     guard let bridge = surfaceBridge(fromUserdata: userdata), let surface = bridge.surface else {
       return
     }
-    value.withCString { ptr in
-      ghostty_surface_complete_clipboard_request(surface, ptr, state, true)
+    guard let payload else {
+      ghostty_surface_deny_clipboard_request(surface, state)
+      return
+    }
+    completeClipboardRequest(surface, payload: payload, state: state, confirmed: true)
+  }
+
+  private static func completeClipboardRequest(
+    _ surface: ghostty_surface_t,
+    payload: GhosttyClipboardPayload,
+    state: UnsafeMutableRawPointer?,
+    confirmed: Bool = false,
+    remember: Bool = false
+  ) {
+    var cStrings: [UnsafeMutablePointer<CChar>] = []
+    var cBuffers: [UnsafeMutableRawPointer] = []
+    defer {
+      for string in cStrings { free(string) }
+      for buffer in cBuffers { buffer.deallocate() }
+    }
+
+    var cContents: [ghostty_clipboard_content_s] = []
+    for entry in payload.contents {
+      guard let mime = strdup(entry.mime) else { continue }
+      cStrings.append(mime)
+      let buffer = UnsafeMutableRawPointer.allocate(byteCount: max(entry.data.count, 1), alignment: 1)
+      cBuffers.append(buffer)
+      entry.data.withUnsafeBytes { source in
+        if let base = source.baseAddress {
+          buffer.copyMemory(from: base, byteCount: source.count)
+        }
+      }
+      cContents.append(
+        ghostty_clipboard_content_s(
+          mime: mime,
+          data: buffer.assumingMemoryBound(to: CChar.self),
+          len: entry.data.count
+        )
+      )
+    }
+
+    var cAvailable: [UnsafePointer<CChar>?] = []
+    for mime in payload.available {
+      guard let string = strdup(mime) else { continue }
+      cStrings.append(string)
+      cAvailable.append(UnsafePointer(string))
+    }
+
+    cContents.withUnsafeBufferPointer { contents in
+      cAvailable.withUnsafeBufferPointer { available in
+        var complete = ghostty_clipboard_complete_s(
+          contents: contents.baseAddress,
+          contents_len: contents.count,
+          available: available.baseAddress,
+          available_len: available.count,
+          confirmed: confirmed,
+          remember: remember
+        )
+        ghostty_surface_complete_clipboard_request(surface, &complete, state)
+      }
     }
   }
 
@@ -1356,5 +1431,86 @@ extension NSPasteboard {
     default:
       return nil
     }
+  }
+
+  func ghosttyData(forMime mime: String) -> Data? {
+    switch mime {
+    case "text/plain":
+      return getOpinionatedStringContents().map { Data($0.utf8) }
+    default:
+      guard let type = NSPasteboard.PasteboardType(mimeType: mime) else { return nil }
+      return data(forType: type)
+    }
+  }
+
+  func ghosttyAvailableMimes() -> [String] {
+    let declared = types ?? []
+    var result: [String] = []
+    var seen = Set<String>()
+    if declared.contains(.string) || declared.contains(.fileURL) {
+      result.append("text/plain")
+      seen.insert("text/plain")
+    }
+    for type in declared {
+      guard let mime = UTType(type.rawValue)?.preferredMIMEType else { continue }
+      let normalized = mime == "text/plain;charset=utf-8" ? "text/plain" : mime
+      guard seen.insert(normalized).inserted else { continue }
+      result.append(normalized)
+    }
+    return result
+  }
+}
+
+nonisolated struct GhosttyClipboardContent: Equatable, Sendable {
+  var mime: String
+  var data: Data
+}
+
+struct GhosttyClipboardPayload: Equatable {
+  var contents: [GhosttyClipboardContent]
+  var available: [String]
+
+  nonisolated init(contents: [GhosttyClipboardContent], available: [String]) {
+    self.contents = contents
+    self.available = available
+  }
+
+  init(pasteboard: NSPasteboard, mimes: [String], list: Bool) {
+    var contents: [GhosttyClipboardContent] = []
+    var seen = Set<String>()
+    for mime in mimes where seen.insert(mime).inserted {
+      guard let data = pasteboard.ghosttyData(forMime: mime) else { continue }
+      contents.append(GhosttyClipboardContent(mime: mime, data: data))
+    }
+    self.init(contents: contents, available: list ? pasteboard.ghosttyAvailableMimes() : [])
+  }
+
+  nonisolated init(confirm: ghostty_clipboard_confirm_s) {
+    var contents: [GhosttyClipboardContent] = []
+    if let raw = confirm.contents {
+      for index in 0..<confirm.contents_len {
+        let item = raw[index]
+        guard let mime = item.mime else { continue }
+        let data: Data =
+          if let bytes = item.data, item.len > 0 {
+            Data(bytes: bytes, count: item.len)
+          } else {
+            Data()
+          }
+        contents.append(GhosttyClipboardContent(mime: String(cString: mime), data: data))
+      }
+    }
+    var available: [String] = []
+    if let raw = confirm.available {
+      for index in 0..<confirm.available_len {
+        guard let pointer = raw[index] else { continue }
+        available.append(String(cString: pointer))
+      }
+    }
+    self.init(contents: contents, available: available)
+  }
+
+  var hasText: Bool {
+    contents.contains { $0.mime == "text/plain" && !$0.data.isEmpty }
   }
 }
