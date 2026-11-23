@@ -125,6 +125,32 @@ struct PaneAgentStateTests {
     #expect(blocked == .blocked)
   }
 
+  @Test func antigravityRetainsPreviousStateOnUnknown() {
+    let now = Date(timeIntervalSince1970: 100)
+    var lastWorking: Date?
+
+    for previous: AgentRawState in [.working, .blocked, .idle, .unknown] {
+      let stabilized = stabilizeAgentState(
+        agent: .antigravity,
+        previous: previous,
+        raw: .unknown,
+        now: now,
+        lastWorkingAt: &lastWorking
+      )
+      #expect(stabilized == previous)
+    }
+
+    #expect(
+      stabilizeAgentState(
+        agent: .antigravity,
+        previous: .working,
+        raw: .idle,
+        now: now,
+        lastWorkingAt: &lastWorking
+      ) == .idle
+    )
+  }
+
   @Test func presenceRequiresSixMissesBeforeRelease() {
     var presence = AgentDetectionPresence(currentAgent: .codex)
 

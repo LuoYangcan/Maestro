@@ -1,11 +1,26 @@
 import Darwin
 import Foundation
 
-struct ForegroundProcess: Equatable, Sendable {
+nonisolated struct ForegroundProcess: Equatable, Sendable {
   let pid: pid_t
   let name: String
   let argv0: String?
   let cmdline: String?
+  let arguments: [String]?
+
+  init(
+    pid: pid_t,
+    name: String,
+    argv0: String?,
+    cmdline: String?,
+    arguments: [String]? = nil
+  ) {
+    self.pid = pid
+    self.name = name
+    self.argv0 = argv0
+    self.cmdline = cmdline
+    self.arguments = arguments
+  }
 }
 
 struct ForegroundJob: Equatable, Sendable {
@@ -103,7 +118,8 @@ nonisolated enum ProcessDetection {
         pid: pid,
         name: name,
         argv0: argv?.first.flatMap(basename),
-        cmdline: argv?.joined(separator: " ")
+        cmdline: argv?.joined(separator: " "),
+        arguments: argv
       )
     }
 

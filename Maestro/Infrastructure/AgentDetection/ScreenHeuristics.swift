@@ -4,6 +4,11 @@ nonisolated private let agentDetectionRecentLineLimit = 24
 
 extension DetectedAgent {
   nonisolated func detectState(in screen: String) -> AgentRawState {
+    if self == .antigravity {
+      // Antigravity anchors on the live composer box by shape and ignores rows below the
+      // status line; slicing to a tail lets a tall custom status script push the composer out.
+      return detectAntigravity(screen)
+    }
     let screen = recentLines(screen, limit: agentDetectionRecentLineLimit)
     switch self {
     case .pi:
@@ -28,6 +33,8 @@ extension DetectedAgent {
       return detectDroid(screen)
     case .amp:
       return detectAmp(screen)
+    case .antigravity:
+      return detectAntigravity(screen)
     }
   }
 }
@@ -236,6 +243,65 @@ nonisolated private func detectAmp(_ content: String) -> AgentRawState {
     return .working
   }
   return .idle
+}
+
+nonisolated private func detectAntigravity(_ content: String) -> AgentRawState {
+  let rows = content.split(separator: "\n", omittingEmptySubsequences: false)
+    .map { (raw: String($0), text: $0.trimmingCharacters(in: .whitespaces)) }
+    .filter { !$0.text.isEmpty }
+  let lines = rows.map(\.text)
+  let isColumnZero = { (index: Int) -> Bool in !rows[index].raw.hasPrefix(" ") }
+  let isRule = { (index: Int) -> Bool in isColumnZero(index) && lines[index].allSatisfy { $0 == "─" } }
+  let fullWidth = rows.indices.filter(isRule).map { lines[$0].count }.max() ?? 0
+  let isBorder = { (index: Int) -> Bool in isRule(index) && lines[index].count == fullWidth }
+  let isPrompt = { (index: Int) -> Bool in
+    isColumnZero(index) && (lines[index] == ">" || lines[index].hasPrefix("> "))
+  }
+
+  var composers: [(top: Int, bottom: Int)] = []
+  var index = rows.startIndex
+  while index < rows.endIndex {
+    guard isBorder(index), index + 1 < rows.endIndex, isPrompt(index + 1) else {
+      index += 1
+      continue
+    }
+    var bottom = index + 2
+    while bottom < rows.endIndex, !isColumnZero(bottom) {
+      bottom += 1
+    }
+    guard bottom < rows.endIndex, isBorder(bottom) else {
+      index += 1
+      continue
+    }
+    composers.append((top: index, bottom: bottom))
+    index = bottom
+  }
+
+  let statusState = { (index: Int) -> AgentRawState? in
+    guard index < lines.endIndex, isColumnZero(index) else { return nil }
+    let signatures: [(String, AgentRawState)] = [
+      ("esc to cancel", .working),
+      ("esc to interrupt", .working),
+      ("? for shortcuts", .idle),
+    ]
+    return signatures.first { lines[index] == $0.0 || lines[index].hasPrefix($0.0 + "  ") }?.1
+  }
+
+  let isHint = { (line: String) -> Bool in
+    line.hasPrefix("↑/↓ Navigate") || line.hasPrefix("↑↓ Navigate")
+  }
+  if let hint = lines.lastIndex(where: isHint) {
+    // Slash-command autocomplete renders below a live composer and rewrites the status row
+    // to `esc to cancel`, so keep the previous state via `.unknown`.
+    if let composer = composers.last, composer.bottom < hint {
+      return .unknown
+    }
+    let selected = rows.indices[..<hint].suffix(8).contains { isColumnZero($0) && lines[$0].hasPrefix("> ") }
+    return selected ? .blocked : .unknown
+  }
+
+  guard let composer = composers.last else { return .unknown }
+  return statusState(composer.bottom + 1) ?? .unknown
 }
 
 nonisolated private func contentAbovePromptBox(_ content: String) -> String {
