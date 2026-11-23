@@ -493,4 +493,61 @@ struct ScreenHeuristicsTests {
     #expect(DetectedAgent.amp.detectState(in: "esc to cancel") == .working)
     #expect(DetectedAgent.amp.detectState(in: "done") == .idle)
   }
+
+  @Test func antigravityDetection() {
+    let idleScreen = """
+      ────────────────────────────────────────────────────────────
+      >
+      ────────────────────────────────────────────────────────────
+      ? for shortcuts                             Gemini 3.8 Flash · high
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: idleScreen) == .idle)
+
+    let workingScreen = """
+      ⠋ Generating…
+      ────────────────────────────────────────────────────────────
+      >
+      ────────────────────────────────────────────────────────────
+      esc to cancel                               Gemini 3.8 Flash · high
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: workingScreen) == .working)
+
+    let tallCustomStatusBelowComposer = """
+      ────────────────────────────────────────────────────────────
+      >
+      ────────────────────────────────────────────────────────────
+      esc to interrupt                            Gemini 3.8 Flash · high
+      \((1...30).map { "custom status row \($0)" }.joined(separator: "\n"))
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: tallCustomStatusBelowComposer) == .working)
+
+    let permissionDialog = """
+      Run command?
+      > 1. Allow once
+        2. Deny
+      ↑/↓ Navigate · Enter Select · Esc Cancel
+      esc to cancel
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: permissionDialog) == .blocked)
+
+    let slashAutocomplete = """
+      ────────────────────────────────────────────────────────────
+      > /mo
+      ────────────────────────────────────────────────────────────
+      esc to cancel                               Gemini 3.8 Flash · high
+      > /model   Switch active model
+        /mode    Switch planning mode
+      ↑/↓ Navigate · Enter Select
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: slashAutocomplete) == .unknown)
+
+    let wrappedDraft = """
+      ────────────────────────────────────────────────────────────
+      > This is a long draft that wraps onto continuation rows
+        before pressing enter.
+      ────────────────────────────────────────────────────────────
+                                                  Gemini 3.8 Flash · high
+      """
+    #expect(DetectedAgent.antigravity.detectState(in: wrappedDraft) == .unknown)
+  }
 }

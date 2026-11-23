@@ -85,6 +85,10 @@ func stabilizeAgentState(
   now: Date,
   lastWorkingAt: inout Date?
 ) -> AgentRawState {
+  if agent == .antigravity, raw == .unknown {
+    lastWorkingAt = nil
+    return previous
+  }
   guard agent == .claude || agent == .kimi else {
     lastWorkingAt = nil
     return raw
