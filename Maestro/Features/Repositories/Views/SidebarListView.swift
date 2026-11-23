@@ -2,8 +2,6 @@ import ComposableArchitecture
 import Sharing
 import SwiftUI
 
-// Uses LazyVStack rather than List for repository drag precision; keyboard
-// worktree navigation goes through Cmd+Ctrl+↑/↓ (`selectNextWorktree`).
 struct SidebarListView: View {
   enum RepositoryListHeaderAction: Equatable {
     case expandAll
@@ -90,7 +88,8 @@ struct SidebarListView: View {
 
     ScrollViewReader { scrollProxy in
       ScrollView {
-        LazyVStack(spacing: 0) {
+        // Lazy layout can repeatedly invalidate expanded repository sections while scrolling on macOS.
+        VStack(spacing: 0) {
           // When there are no repositories the sidebar stays empty — the
           // detail pane's `EmptyStateView` ("Open a repository or folder")
           // carries the prompt and the Add Repository button instead.
