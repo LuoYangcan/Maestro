@@ -134,13 +134,14 @@ struct MaestroApp: App {
     if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent("ghostty") {
       setenv("GHOSTTY_RESOURCES_DIR", resourceURL.path, 1)
     }
+    // libghostty retains the argv pointer for later config reloads, so the
+    // backing buffer must live for the process lifetime (like CommandLine.unsafeArgv).
     let ghosttyArgv = GhosttyCLI.argv(resolvedKeybindings: initialResolvedKeybindings)
-    ghosttyArgv.withUnsafeBufferPointer { buffer in
-      let argc = UInt(max(0, buffer.count - 1))
-      let argv = UnsafeMutablePointer(mutating: buffer.baseAddress)
-      if ghostty_init(argc, argv) != GHOSTTY_SUCCESS {
-        preconditionFailure("ghostty_init failed")
-      }
+    let argv = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: ghosttyArgv.count)
+    argv.initialize(from: ghosttyArgv, count: ghosttyArgv.count)
+    let argc = UInt(max(0, ghosttyArgv.count - 1))
+    if ghostty_init(argc, argv) != GHOSTTY_SUCCESS {
+      preconditionFailure("ghostty_init failed")
     }
     let runtime = GhosttyRuntime(initialColorScheme: initialSettings.appearanceMode.colorScheme)
     _ghostty = State(initialValue: runtime)

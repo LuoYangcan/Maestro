@@ -5,34 +5,16 @@ Maestro embeds GhosttyKit from `ThirdParty/ghostty`. The submodule points to the
 ## Branch Model
 
 - Upstream remote: `https://github.com/ghostty-org/ghostty`
-- Fork remote: `git@github.com:onevcat/ghostty.git`
+- Fork remote: `https://github.com/onevcat/ghostty.git`
 - Per-version patched branches: `release/v<UPSTREAM_TAG>-patched`
-- Current patched branch: `release/v1.3.1-patched`
+- Current patched branch: `release/v1.4.0-patched` (`9811138fb6acaf1f1737e5148b007070601f4948`)
 
-Each patched branch starts at the matching upstream tag and only adds onevcat patches. Do not rewrite an existing patched branch after publishing it.
+Each patched branch starts at the matching upstream tag and only adds fork patches. Do not rewrite an existing patched branch after publishing it.
 
-## Current Patches
+## Patches Dropped on `v1.4.0`
 
-Listed in topological order on `release/v1.3.1-patched`. When upgrading to a new
-upstream tag, cherry-pick all of them.
-
-1. `76dce319f55db097b2b7ae3cad2f6267475936f0` — `embedded: expose surface child PID`
-   - Adds `ghostty_surface_pid(ghostty_surface_t)` to the embedded C API.
-   - Returns the local surface child process PID, or `0` when unavailable or exited.
-2. `a284127166ce76d872320d7dfa2a5c57268be9de` — `embedded: expose surface foreground process group`
-   - Adds `ghostty_surface_foreground_process_group(ghostty_surface_t)` to the
-     embedded C API for callers that need the pty's foreground job, not just the
-     shell PID.
-3. `fe714860c12da41442b63135d09ba80e293b66ad` — `surface: use libc tcgetpgrp for foreground group`
-   - Switches the foreground-group lookup from `proc_bsdinfo.e_tpgid` to
-     `tcgetpgrp` on the pty fd, which is more reliable when the shell PID
-     itself is not the controlling process.
-4. `48365577c1ae8e422c0dd90489921f07b9f79171` — `Backport Ghostty text free ABI fix`
-   - Backports upstream `ghostty-org/ghostty#12025` before an upstream tag that includes it exists.
-   - Keeps the public `ghostty_surface_free_text(ghostty_surface_t, ghostty_text_s*)`
-     API shape and fixes the Zig export to accept the unused surface parameter.
-   - Drop this patch when upgrading to an upstream tag that contains `4803d58`.
-   - This is the commit the submodule currently points at.
+- Foreground process group patches (`a28412716`, `fe714860c`) — replaced by upstream `ghostty_surface_foreground_pid`.
+- Text free ABI backport (`48365577c`) — included upstream in `v1.4.0`.
 
 ## Upgrade To A New Ghostty Tag
 
@@ -40,19 +22,20 @@ upstream tag, cherry-pick all of them.
 cd ThirdParty/ghostty
 
 git fetch upstream --tags
-git fetch onevcat
+git fetch origin
 
-PREV=v1.3.1
-NEXT=v1.3.2
+PREV=v1.4.0
+NEXT=v1.4.1
+PATCH_TIP=9811138fb6acaf1f1737e5148b007070601f4948
 
 git checkout -b "release/${NEXT}-patched" "${NEXT}"
-git cherry-pick "${PREV}..onevcat/release/${PREV}-patched"
-git push -u onevcat "release/${NEXT}-patched"
+git cherry-pick $(git rev-list --reverse --no-merges "${PREV}..${PATCH_TIP}")
+git push -u origin "release/${NEXT}-patched"
 
 cd ../..
 git -C ThirdParty/ghostty checkout "release/${NEXT}-patched"
 git add ThirdParty/ghostty
-git commit -m "ghostty: bump submodule to ${NEXT}-patched"
+git commit -m "chore(ghostty): bump submodule to ${NEXT}-patched"
 make sync-ghostty
 make build-app
 ```
@@ -63,14 +46,14 @@ Do not force-push `release/v*-patched` branches. If a cherry-pick needs repair, 
 
 ## Build Note
 
-Build GhosttyKit with Xcode 26.3:
+Ghostty `v1.4.0` requires Zig `0.17.0` (`minimum_zig_version` in `ThirdParty/ghostty/build.zig.zon`), pinned in `mise.toml`.
+
+The previous Xcode 26.3 pin from the `v1.3.1` / Zig `0.15.2` line is no longer required: Zig `0.16+` fixes linking against `arm64e`-only `libSystem.tbd` in macOS SDK 26.4+ (`ziglang/zig#31658`). Both `make sync-ghostty` and `make build-app` now build with the default Xcode (verified on Xcode 27.2).
+
+If a freshly installed Xcode lacks the Metal toolchain needed to compile `Ghostty.metallib`, install it once with:
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode-26.3.0.app/Contents/Developer make sync-ghostty
+xcodebuild -downloadComponent MetalToolchain
 ```
 
-Build Maestro itself with the current Xcode, typically Xcode 26.4:
-
-```bash
-DEVELOPER_DIR=/Applications/Xcode-26.4.1.app/Contents/Developer make build-app
-```
+The `Makefile` passes `-Dversion-string` from `ThirdParty/ghostty/build.zig.zon` so non-semver release tags on `onevcat/ghostty` (such as `xcframework-*-prowl-v1`) do not trip Ghostty's `Config.zig` tag check.
